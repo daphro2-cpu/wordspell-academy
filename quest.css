@@ -187,11 +187,12 @@ body::before{opacity:.22}
 .story-status{min-height:1.4em;color:#ffebaa;font-weight:800}
 @media(prefers-reduced-motion:reduce){.word-reels.spinning span,.bridge-deck .bridge-track .fresh,.cauldron.brewing i,.dragon-hatch{animation:none!important}}
 
-@font-face{font-family:"Classroom Letters";src:local("Letters for Learners Bold"),local("Letters for Learners");font-display:swap}
-:root{--font:"Classroom Letters","Comic Sans MS","Trebuchet MS",sans-serif;--heading:"Classroom Letters","Comic Sans MS","Trebuchet MS",sans-serif}
-.word-reels{font-family:var(--font)}
+:root{--font:"Trebuchet MS",system-ui,sans-serif;--heading:var(--font);--practice-font:var(--font)}
+:root.use-classroom-font{--practice-font:"Classroom Letters",var(--font)}
+.word-reels,.prompt-word,.forge-word,.letter-bank .tile,.found-word,.story-words .option,.story-scroll,.review-flip strong,.review-text,.flying-tag{font-family:var(--practice-font)}
 .classroom-font{display:grid;gap:4px;margin:12px 0}
 .classroom-font small{line-height:1.35}
+.classroom-font button{justify-self:start}
 .letter-bank{display:grid;grid-template-columns:repeat(auto-fit,minmax(48px,1fr));gap:7px;max-width:610px;margin:12px 0}
 .letter-bank .tile{width:100%;min-width:0;min-height:51px;background:#f9e5bf;color:#402c48;font-size:1.75rem;box-shadow:0 3px #886047}
 .forge-word{display:flex;flex-wrap:wrap;align-items:baseline;gap:1px;padding:8px 12px;width:fit-content;min-width:110px;min-height:62px;color:#382748;border-radius:10px;background:#fff2d2;font-size:clamp(28px,6vw,51px);font-weight:800}

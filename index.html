@@ -7,8 +7,8 @@
   <meta name="description" content="Six classroom phonics games for Giraffe Books 1–3.">
   <title>Wordspell Academy · Giraffe Phonics</title>
   <link rel="stylesheet" href="./styles.css">
-  <link rel="stylesheet" href="./quest.css">
-  <script type="module" src="./app.mjs"></script>
+  <link rel="stylesheet" href="./quest.css?v=readable-text">
+  <script type="module" src="./app.mjs?v=readable-text"></script>
 </head>
 <body>
   <a class="skip" href="#main">Skip to games</a>
@@ -63,11 +63,13 @@
       <button class="quiet audio" type="button" id="voice-preview">Preview voice</button>
       <p id="voice-note"></p>
     </div>
-    <label class="classroom-font">Classroom font
+    <div class="classroom-font">
+      <label for="classroom-font">Classroom font</label>
       <input id="classroom-font" type="file" accept=".ttf,.otf,.woff,.woff2">
-      <small>Letters for Learners uses the font installed on this device. You can also choose your own copy here.</small>
+      <small>Choose your copy of Letters for Learners Bold to use it on practice words and letter tiles.</small>
+      <button id="reset-classroom-font" class="quiet" type="button" hidden>Use default font</button>
       <small id="classroom-font-status" role="status"></small>
-    </label>
+    </div>
     <p>In the sound labels, <u>th</u> is voiced and <u>oo</u> is long.</p>
     <button class="primary" type="button" data-close-guide>Back to the academy</button>
   </dialog>
