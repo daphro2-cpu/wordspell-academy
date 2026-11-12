@@ -1,8 +1,8 @@
 import {catalog} from './bank.mjs?v=forge-workbench';
-import {modes,levels,createRound,sortingBoard,practiceContrasts,shuffle,choiceLabel,isVowelTile} from './engine.mjs?v=forge-workbench';
+import {modes,levels,createRound,sortingBoard,practiceContrasts,shuffle,choiceLabel,isVowelTile} from './engine.mjs?v=story-clues';
 
 import {missions,flightMission} from './missions.mjs?v=forge-workbench';
-import {makeStory} from './story.mjs';
+import {makeStory} from './story.mjs?v=story-clues';
 import {reviewPicture} from './review.mjs?v=forge-workbench';
 
 const by=id=>document.getElementById(id);
@@ -271,27 +271,35 @@ function restoredText(page,found) {
   return esc(page.sentence).replace(/\{([^}]+)\}/g,(_,word)=>found.has(word.toLowerCase())
     ? '<strong class="sentence-insert">'+word+'</strong>' : '<span class="ink-blank" aria-label="missing word">___</span>');
 }
+function storyIllustration(page){
+  if(page.art)return '<img class="story-art" src="./assets/story-'+esc(page.art)+'.webp" alt="'+esc(page.imageAlt)+'">';
+  return '<div class="story-picture-clues">'+page.targets.map(word=>{
+    const picture=reviewPicture(word);
+    if(!picture)return '';
+    return picture.src?'<img src="'+esc(picture.src)+'" alt="">':'<span aria-hidden="true">'+esc(picture.icons)+'</span>';
+  }).join('')+'</div>';
+}
 function storyView(mission) {
   const done=active.index===active.questions.length;
   const q=question();
   const complete=q&&active.found.size===q.targets.length;
   const content=done
-    ? `<h2>You brought the words back!</h2><div class="story-scroll">${active.questions.map(page=>'<p>'+restoredText(page,new Set(page.targets))+'</p>').join('')}</div>
+    ? `<h2>You brought the words back!</h2><div class="story-scroll">${active.questions.map(page=>'<figure class="restored-page">'+storyIllustration(page)+'<p>'+restoredText(page,new Set(page.targets))+'</p></figure>').join('')}</div>
       <div class="play-actions"><button class="primary" data-action="readStory" type="button">Read with me</button><button class="quiet" data-action="replay" type="button">Play again</button></div><p id="story-read-note" role="status"></p>${wordReview(active.questions.flatMap(page=>page.targets.map(word=>({word}))))}`
-    : `<h2>${esc(q.clue)}</h2><p class="prompt">Read the words. Catch the ones that match.</p>
-      <div class="story-scroll"><p>${restoredText(q,active.found)}</p></div>
+    : `<h2>${esc(q.clue)}</h2><div class="story-clue">${audioButton(q.anchor,'Hear the clue word')}<strong>${esc(q.anchor)}</strong>
+      <p>${q.middle?'Say the choices. Listen for the same sound in the middle.':'Read the choices. Use the clue word to help.'}</p></div>
+      <div class="story-scroll"><figure class="restored-page">${storyIllustration(q)}<p>${restoredText(q,active.found)}</p></figure></div>
       <div class="choices story-words" role="group" aria-label="Words to find">${q.options.map(word=>'<button class="option'+(active.found.has(word)?' correct':'')+'" type="button" data-story-word="'+esc(word)+'" '+(active.found.has(word)||complete?'disabled':'')+'>'+esc(word)+'</button>').join('')}</div>
       <p role="status" class="story-status">${esc(active.storyMessage||active.found.size+' of '+q.targets.length+' words found')}</p>
       ${complete?'<div class="play-actions"><button class="primary" data-action="storyNext" type="button">'+(active.index+1===active.questions.length?'Read the story':'Next page')+' →</button></div>':''}`;
   return `<article class="stage mission scene-context"><header class="mission-header"><div><h1 tabindex="-1">Sentence Quest</h1><p class="mission-objective">The Invisible Ink Story</p></div><span class="mission-count">${done?'Story found!':'Page '+(active.index+1)+' of '+active.questions.length}</span></header>
-    ${trail(active.questions.length)}<div class="scene-grid"><div class="task">${storyPuzzle()}${content}</div>
+    ${trail(active.questions.length)}<div class="scene-grid"><div class="task">${done?'':storyPuzzle()}${content}</div>
     <div>${guideView(mission,null)}${done?'':'<div class="ink-monster" role="img" aria-label="The Word Monster and its spilled ink"></div>'}</div></div></article>`;
 }
 function storyPuzzle(){
-  const total=active.questions.length;
   const placed=active.index;
-  return `<div class="story-puzzle" style="--pieces:${total}" role="img" aria-label="${placed} of ${total} picture pieces placed">
-    ${Array.from({length:total},(_,index)=>'<span class="'+(index<placed?'piece '+(index===placed-1?'just-fit':''):'')+'" style="--piece-x:'+Math.round(100*index/(total-1))+'%"></span>').join('')}
+  return `<div class="story-panels" aria-label="${placed} of ${active.questions.length} pages restored">
+    ${active.questions.map((page,index)=>'<div class="story-panel '+(index===placed-1?'just-fit':'')+'">'+(index<placed?storyIllustration(page):'<span aria-hidden="true">✧</span>')+'</div>').join('')}
   </div>`;
 }
 function catchWord(word) {
@@ -300,7 +308,7 @@ function catchWord(word) {
     active.found.add(word);
     active.storyMessage=active.found.size===q.targets.length?'You found all the words!':'You found '+active.found.size+' of '+q.targets.length+' words.';
   } else {
-    active.storyMessage='Try again. Read the word slowly.';
+    active.storyMessage=q.middle?'Try again. Say the word and listen to its middle sound.':'Try again. Read the word and look for the clue pattern.';
   }
   render();
   (play.querySelector('[data-action=storyNext]')??[...play.querySelectorAll('[data-story-word]:enabled')].find(el=>el.dataset.storyWord===word)??play.querySelector('[data-story-word]:enabled'))?.focus({preventScroll:true});
@@ -316,7 +324,7 @@ function readStory() {
       note.textContent='Read the story out loud together. Choose a US voice in Teacher guide for narration on this trail.';
       return;
     }
-    const track=active.settings.book===2?'story-magic':active.settings.group==='all'?'story-mixed':'story-short';
+    const track=active.settings.book===2?'story-magic-v2':active.settings.group==='all'?'story-mixed-v2':'story-short-v2';
     playBundled(track,soundRequest);
     return;
   }
@@ -527,7 +535,7 @@ function forgeView(mission){
     <div class="scene-grid"><div class="task"><h2>${heading}</h2>${swordView()}
       <div class="forge-cards" role="group" aria-label="Words on the workbench">${cards}</div>
       ${ready?'<button class="primary" type="button" data-action="strikeAnvil" '+(active.forgeStriking?'disabled':'')+'>Strike the anvil</button>':
-        spellingForge(q)+'<details class="teacher-word"><summary>Teacher word</summary><p>'+esc(q.entry.word)+'</p><p>'+esc(q.entry.sentence.replace('___',q.entry.word))+'</p></details>'}
+        '<p class="prompt">'+(q.mask?'Fill in the missing letters.':'Tap letters to build the whole word.')+'</p>'+spellingForge(q)+'<details class="teacher-word"><summary>Teacher word</summary><p>'+esc(q.entry.word)+'</p><p>'+esc(q.entry.sentence.replace('___',q.entry.word))+'</p></details>'}
       <p class="story-status" role="status">${esc(active.forgeMessage)}</p>
     </div>${guideView(mission,null)}</div></article>`;
 }

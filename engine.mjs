@@ -221,7 +221,9 @@ function question(mode,book,e,all,level,rng,group) {
     const missing=level.rank===0?spellingContrast(e):{mask:null,answer:e.word};
     const correct=missing.answer.replace('_','').toLowerCase();
     const alphabet=[...'abcdefghijklmnopqrstuvwxyz'];
-    const choices=[...new Set([...correct,...(missing.other??''),...[...correct].flatMap(letter=>[...(similarLetters[letter]??'')])])];
+    const clueLetters=level.rank===1?spellingContrast(e):missing;
+    const orderedLetters=[...new Set([...(clueLetters.answer.replace('_','')),...correct])];
+    const choices=[...new Set([...correct,...(clueLetters.other??''),...orderedLetters.flatMap(letter=>[...(similarLetters[letter]??'')])])];
     const count=missing.other?2:level.rank===0?new Set(correct).size+2:new Set(correct).size+4;
     const letters=level.rank===2?alphabet:shuffle(choices.slice(0,count),rng);
     return {...base,prompt:missing.mask?'Listen. Fill in the missing letters.':'Listen. Tap the letters to spell it.',mask:missing.mask,correct,letters,audio:true};

@@ -376,3 +376,21 @@ body::before{opacity:.22}
 .sound-drops span{width:19px;height:19px;transform:rotate(-45deg);border-radius:60% 5% 60% 60%;background:linear-gradient(#ccffff,#4dd9c9);border:1px solid #e5fff9;box-shadow:0 0 8px #71e8d780}
 .sound-drops span:last-child{animation:rise .25s ease-out}
 @media(prefers-reduced-motion:reduce){.hammering .forge-hammer,.hammering .forge-sparks,.hammering .sword-blade::after,.sound-drops span:last-child{animation:none}}
+
+.story-clue{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;color:#ffecb5;margin:10px 0}
+.story-clue strong{font-size:1.25rem}
+.story-clue p{flex-basis:100%;margin:0;font-weight:700}
+.story-panels{display:flex;gap:6px;margin:6px 0 12px}
+.story-panel{display:grid;place-items:center;overflow:hidden;width:74px;height:48px;border:1px dashed #d8af77;border-radius:7px;background:#4c3863;color:#ead0ee}
+.story-panel .story-art{width:100%;height:100%;object-fit:cover;border:0;border-radius:0}
+.story-panel .story-picture-clues{padding:0;gap:0;font-size:.85rem}
+.story-panel .story-picture-clues img{height:32px;width:24px}
+.story-panel.just-fit{animation:puzzle-fit .55s ease-out both}
+.restored-page{display:flex;gap:14px;align-items:center;margin:0;padding:6px 0}
+.restored-page+.restored-page{border-top:1px solid #d2ad78}
+.story-art{flex:0 0 auto;width:clamp(78px,14vw,160px);aspect-ratio:1.3;object-fit:cover;border:1px solid #c69b5c;border-radius:9px}
+.story-picture-clues{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:3px;min-width:75px;padding:3px 5px;font-size:1.35rem}
+.story-picture-clues img{width:35px;height:35px;object-fit:contain}
+.restored-page p{flex:1;min-width:0}
+@media(max-width:450px){.restored-page{gap:7px}.restored-page p{font-size:1.21rem}.story-art{width:74px}}
+@media(prefers-reduced-motion:reduce){.story-panel.just-fit{animation:none}}
