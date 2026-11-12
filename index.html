@@ -7,8 +7,8 @@
   <meta name="description" content="Six classroom phonics games for Giraffe Books 1–3.">
   <title>Wordspell Academy · Giraffe Phonics</title>
   <link rel="stylesheet" href="./styles.css">
-  <link rel="stylesheet" href="./quest.css?v=swinging-doors">
-  <script type="module" src="./app.mjs?v=swinging-doors"></script>
+  <link rel="stylesheet" href="./quest.css?v=classroom-font">
+  <script type="module" src="./app.mjs?v=classroom-font"></script>
 </head>
 <body>
   <a class="skip" href="#main">Skip to games</a>
@@ -66,7 +66,8 @@
     <div class="classroom-font">
       <label for="classroom-font">Classroom font</label>
       <input id="classroom-font" type="file" accept=".ttf,.otf,.woff,.woff2">
-      <small>Choose your copy of Letters for Learners Bold to use it on practice words and letter tiles.</small>
+      <small>Choose your copy of Letters for Learners Bold to use it on the map and in missions on this browser.</small>
+      <p id="classroom-font-preview">Preview · a b c · cat, sit, sun</p>
       <button id="reset-classroom-font" class="quiet" type="button" hidden>Use default font</button>
       <small id="classroom-font-status" role="status"></small>
     </div>

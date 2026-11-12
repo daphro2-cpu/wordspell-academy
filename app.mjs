@@ -644,32 +644,75 @@ by('fullscreen').addEventListener('click',async()=>{
 by('home').addEventListener('click',e=>{if(active){e.preventDefault();returnToLobby();}});
 
 let customFont;
+let fontRequest=0;
+const classroomFontKey='wordspell-classroom-font-v1';
 const classroomFontInput=by('classroom-font');
 const classroomFontStatus=by('classroom-font-status');
 const resetClassroomFont=by('reset-classroom-font');
+
+function readClassroomFont(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=()=>resolve(reader.result);
+    reader.onerror=()=>reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+async function applyClassroomFont(data,request){
+  const encoded=data.split(',')[1];
+  if(!encoded)throw Error('Font data is empty');
+  const bytes=Uint8Array.from(atob(encoded),character=>character.charCodeAt(0));
+  const next=await new FontFace('Classroom Letters',bytes,{weight:'400 900'}).load();
+  if(request!==fontRequest)return false;
+  if(customFont)document.fonts.delete(customFont);
+  document.fonts.add(next);
+  const canvas=document.createElement('canvas');
+  const sample=canvas.getContext('2d');
+  sample.font='700 28px "Classroom Letters", sans-serif';
+  sample.fillText('abc cat 123',6,38);
+  if(!sample.getImageData(0,0,canvas.width,canvas.height).data.some((value,index)=>index%4===3&&value>0)){
+    document.fonts.delete(next);
+    if(customFont)document.fonts.add(customFont);
+    throw Error('Font preview is blank');
+  }
+  customFont=next;
+  document.documentElement.classList.add('use-classroom-font');
+  resetClassroomFont.hidden=false;
+  return true;
+}
 classroomFontInput.addEventListener('change',async event=>{
   const file=event.target.files[0];
   if(!file)return;
+  const request=++fontRequest;
   try {
-    const next=new FontFace('Classroom Letters',await file.arrayBuffer(),{weight:'400 900'});
-    await next.load();
-    if(classroomFontInput.files[0]!==file)return;
-    if(customFont)document.fonts.delete(customFont);
-    document.fonts.add(next);
-    customFont=next;
-    document.documentElement.classList.add('use-classroom-font');
-    resetClassroomFont.hidden=false;
-    classroomFontStatus.textContent='Practice font loaded for this visit.';
+    const data=await readClassroomFont(file);
+    if(!await applyClassroomFont(data,request))return;
+    try {
+      localStorage.setItem(classroomFontKey,data);
+      classroomFontStatus.textContent='Classroom font applied and saved in this browser.';
+    } catch {
+      classroomFontStatus.textContent='Classroom font applied for this visit.';
+    }
   } catch {
-    if(classroomFontInput.files[0]===file)classroomFontStatus.textContent='This font could not be opened.';
+    if(request===fontRequest)classroomFontStatus.textContent='This font could not be displayed.';
   }
 });
 resetClassroomFont.addEventListener('click',()=>{
+  fontRequest++;
   classroomFontInput.value='';
   document.documentElement.classList.remove('use-classroom-font');
   if(customFont)document.fonts.delete(customFont);
   customFont=undefined;
+  try {localStorage.removeItem(classroomFontKey);} catch {}
   resetClassroomFont.hidden=true;
   classroomFontStatus.textContent='Default font restored.';
   classroomFontInput.focus();
 });
+try {
+  const savedFont=localStorage.getItem(classroomFontKey);
+  if(savedFont)applyClassroomFont(savedFont,fontRequest).then(applied=>{
+    if(applied)classroomFontStatus.textContent='Using the classroom font saved in this browser.';
+  }).catch(()=>{
+    if(fontRequest===0)localStorage.removeItem(classroomFontKey);
+  });
+} catch {}
