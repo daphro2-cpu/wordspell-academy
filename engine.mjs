@@ -102,6 +102,11 @@ function patternKey(book,e) {
 
 function ruleExplanation(book,e) {
   const p=e.pattern;
+  if (book===1 && e.group==='vowels') {
+    const examples={a:['cat','mat'],e:['bed','pen'],i:['sit','pin'],o:['hot','pot'],u:['cup','sun']};
+    const example=examples[p].find(word=>word!==e.word);
+    return 'Say “'+e.word+'” slowly, one sound at a time. Ask: “Does the middle sound match the one in '+example+'?”';
+  }
   if (book===1 && p==='ds') return 'The ending in '+e.word+' has /d/ followed by /z/.';
   if (book===1 && p==='ts') return 'The ending in '+e.word+' has /t/ followed by /s/.';
   if (p==='ng') return 'The letters ng work together to spell one sound.';

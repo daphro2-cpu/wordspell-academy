@@ -269,3 +269,18 @@ body::before{opacity:.22}
 @keyframes egg-stream{0%{opacity:0;transform:scaleX(.2)}30%,58%{opacity:1;transform:translate(12px,13px) rotate(22deg)}100%{opacity:0;transform:translate(34px,21px) scale(.1)}}
 @keyframes egg-wiggle{20%,60%{transform:rotate(-15deg)}40%,80%{transform:rotate(15deg);box-shadow:0 0 37px 6px #feeb80}100%{transform:scale(1.15);box-shadow:0 0 44px 10px #fff3b4}}
 @media(prefers-reduced-motion:reduce){.story-puzzle .just-fit,.brew-bubbles em{animation:none!important}.brew-bubbles em{opacity:.8}}
+
+.scene-listen .sound-door{padding:0;overflow:visible;perspective:450px;background:#3e2748;isolation:isolate}
+.scene-listen .sound-door::before,.scene-listen .sound-door::after{display:none}
+.door-leaf,.door-reveal{position:absolute;inset:0;display:grid;place-content:center;border-radius:inherit}
+.door-leaf{padding:25px 9px 4px;background:repeating-linear-gradient(90deg,#60435950 0 2px,transparent 2px 25%),linear-gradient(90deg,#b98c69,#ecc29c 55%,#b88a70);box-shadow:inset 0 0 0 2px #f3dbac;transform-origin:left center;z-index:1}
+.door-leaf::before{content:"✦";position:absolute;top:12px;left:0;right:0;color:#86552b;font-size:20px}
+.door-leaf::after{content:"";position:absolute;right:9px;bottom:30%;width:8px;height:8px;border:1px solid #784928;border-radius:50%;background:#ffdb83}
+.sound-door.wrong .door-leaf{background:#f8c7b7}
+.scene-listen .sound-door.door-open{background:#382246;border-color:#efcf8b;box-shadow:0 0 20px #ffcf7680}
+.door-open .door-leaf{animation:swing-sound-door .7s cubic-bezier(.21,.72,.22,1) both}
+.door-reveal{padding:0 6px 0 20px;gap:3px;color:#fff2be;background:radial-gradient(ellipse at 64% 56%,#875a58,#382246 72%);font-weight:850;text-shadow:0 2px 4px #2b1b41;animation:door-light .45s .22s both}
+.door-reveal span{font-size:1.65rem;line-height:1;color:#ffe396}
+@keyframes swing-sound-door{from{transform:rotateY(0)}to{transform:rotateY(-72deg)}}
+@keyframes door-light{from{opacity:0}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){.door-open .door-leaf{animation:none;transform:rotateY(-72deg)}.door-reveal{animation:none}}

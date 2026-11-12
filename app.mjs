@@ -1,5 +1,5 @@
 import {catalog} from './bank.mjs';
-import {modes,levels,createRound,sortingBoard,practiceContrasts,shuffle,choiceLabel,isVowelTile} from './engine.mjs';
+import {modes,levels,createRound,sortingBoard,practiceContrasts,shuffle,choiceLabel,isVowelTile} from './engine.mjs?v=swinging-doors';
 
 import {missions,flightMission} from './missions.mjs';
 import {makeStory} from './story.mjs';
@@ -339,9 +339,11 @@ function bridgeProgress(count){
 }
 function options(q){
   return '<div class="choices" role="group" aria-label="Answer choices">'+q.options.map((key,i)=>{
-    const pick='<button type="button" data-choice="'+i+'" class="option'+optionClass(key,q)+'" '+(active.verdict===null?'':'disabled')+'>'+shown(key)+'</button>';
-    if(q.mode!=='listen'||!q.samples[i]||voicePreference==='teacher')return pick;
-    return '<div class="door-choice">'+pick+(active.verdict===null?audioButton(q.samples[i],'Hear an example'):'')+'</div>';
+    const open=active.verdict===true&&key===q.correct;
+    const inside=open?'<span class="door-reveal" aria-hidden="true"><span>✦</span>'+esc(q.entry.word)+'</span>':'';
+    const pick='<button type="button" data-choice="'+i+'" class="option sound-door'+optionClass(key,q)+(open?' door-open':'')+'" '+(active.verdict===null?'':'disabled')+'>'+inside+'<span class="door-leaf">'+shown(key)+'</span></button>';
+    const example=active.verdict===null&&q.samples[i]&&voicePreference!=='teacher'?audioButton(q.samples[i],'Hear an example'):'';
+    return '<div class="door-choice">'+pick+example+'</div>';
   }).join('')+'</div>';
 }
 function optionClass(key,q){
