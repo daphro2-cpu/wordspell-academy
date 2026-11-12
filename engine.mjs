@@ -153,10 +153,10 @@ function keyedOptions(answer, entries, getKey, count, rng) {
 
 const shortVowelFlightChoices={
   cat:['cot','cut','cap','bat'],mat:['met','map','cat','man'],map:['mop','nap','mat','cap'],
-  bed:['bad','bid','bet','red'],met:['mat','men','net','pet'],pen:['pan','pin','pet','ten'],
-  sit:['set','sat','sip','fit'],pin:['pen','pan','pig','tin'],pig:['peg','pug','pin','pit'],
+  bed:['bud','bat','bell','red'],met:['mat','men','net','pet'],pen:['pan','pin','pet','ten'],
+  sit:['sat','sip','fit','pit'],pin:['pen','pan','pig','tin'],pig:['peg','pug','pin','pit'],
   hot:['hat','hut','hop','pot'],cot:['cat','cut','cop','dot'],pot:['pat','pit','pop','hot'],
-  cut:['cat','cot','cup','hut'],cup:['cap','cop','cut','pup'],sun:['sin','sat','sum','run'],
+  cut:['cat','cot','cup','hut'],cup:['cap','cop','cut','pup'],sun:['sin','bun','bud','run'],
 };
 
 function spellingDistance(a,b){

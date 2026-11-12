@@ -1,9 +1,9 @@
 import {catalog} from './bank.mjs?v=forge-workbench';
-import {modes,levels,createRound,sortingBoard,practiceContrasts,shuffle,choiceLabel,isVowelTile} from './engine.mjs?v=moonlit-flight';
+import {modes,levels,createRound,sortingBoard,practiceContrasts,shuffle,choiceLabel,isVowelTile} from './engine.mjs?v=flight-pictures';
 
 import {missions,flightMission} from './missions.mjs?v=moonlit-flight';
 import {makeStory} from './story.mjs?v=story-clues';
-import {reviewPicture} from './review.mjs?v=forge-workbench';
+import {reviewPicture} from './review.mjs?v=flight-pictures';
 
 const by=id=>document.getElementById(id);
 const lobby=by('lobby'), play=by('play'), guide=by('guide');
@@ -17,8 +17,12 @@ let flightTransition;
 let promptWatchdog;
 const musicKey='wordspell-flight-music';
 let musicEnabled=true;
+let flightPicturesEnabled=true;
 let promptPlaying=false;
-try {musicEnabled=localStorage.getItem(musicKey)!=='off';} catch {}
+try {
+  musicEnabled=localStorage.getItem(musicKey)!=='off';
+  flightPicturesEnabled=localStorage.getItem('wordspell-flight-pictures')!=='off';
+} catch {}
 flightMusic.volume=.13;
 function syncFlightMusic(){
   const inFlight=active?.settings.variant==='flight'&&['live','caught','missed'].includes(active.flightPhase)&&active.index<active.questions.length;
@@ -316,12 +320,12 @@ function flightView(q){
     flying?'<button type="button" class="quiet" data-action="pauseFlight">Pause</button>'+audioButton(q.entry.word,'Hear again'):'';
   const ready=waiting?'<p>Listen for five words, one at a time. Catch each one before it flies away.</p>':'';
   const remaining=Math.max(0,Math.ceil(active.flightRemaining/1000));
-  return `<div class="flight-toolbar">${controls}<button type="button" class="quiet flight-music-toggle" data-action="toggleMusic" aria-pressed="${musicEnabled}" aria-label="Background music">♫ Music ${musicEnabled?'on':'off'}</button></div>
+  return `<div class="flight-toolbar">${controls}<button type="button" class="quiet flight-picture-toggle" data-action="toggleFlightPictures" aria-pressed="${flightPicturesEnabled}" aria-label="Picture clues">Picture clues ${flightPicturesEnabled?'on':'off'}</button><button type="button" class="quiet flight-music-toggle" data-action="toggleMusic" aria-pressed="${musicEnabled}" aria-label="Background music">♫ Music ${musicEnabled?'on':'off'}</button></div>
     ${ready}<div class="flight-time">${waiting?'':'<label for="flight-clock">Time left</label><progress id="flight-clock" value="'+active.flightRemaining+'" max="'+(flightTime[active.settings.level]*1000)+'"></progress><span id="flight-seconds">'+remaining+' s</span>'}</div>
     <div class="flying-yard ${waiting||paused?'flight-paused':''} ${flightPhase==='missed'?'flight-escaping':''}" role="group" aria-label="Flying words">${q.options.map((word,i)=>{
       const caught=flightPhase==='caught'&&word===q.correct;
       const timing='--duration:'+flightSpeeds[i]+'s;--offset:'+(-(flightPhases[i]+elapsed))+'s';
-      return '<div class="flight-lane" style="'+timing+'"><button type="button" class="flying-tag'+(caught?' caught':'')+'" data-choice="'+i+'" '+(flying?'':'disabled')+'><span>'+esc(word)+'</span></button></div>';
+      return '<div class="flight-lane" style="'+timing+'"><button type="button" class="flying-tag'+(caught?' caught':'')+'" data-choice="'+i+'" '+(flying?'':'disabled')+'>'+(flightPicturesEnabled?flightPicture(word):'')+'<span>'+esc(word)+'</span></button></div>';
     }).join('')}</div>
     <p class="story-status flight-status" role="status">${esc(active.boardMessage)}</p>
     <div class="object-shelf" aria-label="${shelf.length} ${shelf.length===1?'word':'words'} caught">${shelf.map(i=>{
@@ -867,6 +871,12 @@ const actions={
   startFlight,
   pauseFlight,
   resumeFlight,
+  toggleFlightPictures:()=>{
+    flightPicturesEnabled=!flightPicturesEnabled;
+    try {localStorage.setItem('wordspell-flight-pictures',flightPicturesEnabled?'on':'off');} catch {}
+    render();
+    focusOption('[data-action=toggleFlightPictures]');
+  },
   toggleMusic:()=>{
     musicEnabled=!musicEnabled;
     try {localStorage.setItem(musicKey,musicEnabled?'on':'off');} catch {}

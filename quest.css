@@ -409,3 +409,7 @@ body::before{opacity:.22}
 .flying-tag.wrong-catch{border-color:#efac9a;background:linear-gradient(135deg,#fce0d6,#d99480)}
 @keyframes leave-tower{to{transform:translateX(105%);opacity:0}}
 @media(prefers-reduced-motion:reduce){.flight-escaping .flight-lane{animation:none;opacity:.22}}
+.flight-picture-toggle{font-size:.9rem}
+.flying-tag .flying-object{width:42px;height:36px;border-radius:5px;object-fit:contain;filter:none}
+.flying-tag .flight-picture-icon{font-size:1.18rem;line-height:1.1}
+@media(max-width:480px){.flying-tag .flying-object{width:35px;height:31px}}

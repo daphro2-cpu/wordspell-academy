@@ -5,7 +5,7 @@ const scenes={
   flag:'🚩',flap:'🪽',clip:'📎',clap:'👏',glad:'😄',glass:'🥛',plan:'📝',plant:'🪴',black:'⚫',block:'🧱',slip:'🧍🍌',sled:'🛷',crab:'🦀',crack:'⚡🥚',grab:'✊🍎',grin:'😁',frog:'🐸',dress:'👗',drum:'🥁',trap:'🪤',trip:'🚶🪨',brick:'🧱',press:'👇🔘',spin:'🌀',spot:'🔴',step:'👣',stop:'🛑',skip:'🪢🏃',skin:'✋',scab:'🩹',smell:'👃🌸',snack:'🍪',snap:'🫰',swim:'🏊',splash:'💦',split:'🍎🔪',spring:'🌷🌱',spray:'🧴💦',scrub:'🧽🫧',scrap:'✂️📄',strip:'📏📄',string:'🧵',strap:'🎒',stretch:'🙆',plane:'✈️',slide:'🛝',float:'🎈',brave:'🛡️🦁',trail:'🥾🌲',dream:'😴💭',sleep:'😴🛏️',smile:'🙂',spoon:'🥄',stove:'🔥🍳',stripe:'🦓',street:'🛣️',scrape:'🪚🪵',spruce:'🌲',yes:'👍',yell:'📣',yard:'🏠🌳',yellow:'🟡',my:'🙋🎒',fly:'🪰',sky:'🌤️',dry:'☀️👕',shy:'🫣',happy:'😊',baby:'👶',bunny:'🐇',puppy:'🐶',candy:'🍬',
   ham:'🥪',jam:'🍓🫙',ram:'🐏',skate:'⛸️',ben:'👦',red:'🔴',note:'📝',
 };
-const drawn=new Set('cat mat map bed pen pin pig pot cup sun fan van cake kite home moon'.split(' '));
+const drawn=new Set('cat mat map bed pen pin pig pot cup sun fan van cake kite home moon mop nap man bun bud men pet net pan tin peg pit pug hop hat hut cop dot pop pup run sat fit met cut'.split(' '));
 export function reviewPicture(word) {
   const key=word.toLowerCase();
   if(drawn.has(key))return {src:'./assets/review/'+key+'.webp'};
