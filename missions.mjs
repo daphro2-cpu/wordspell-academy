@@ -12,7 +12,7 @@ export const missions = {
     win:'The pot is bubbling!', miss:'Try that mix again.', reward:['mix added','mixes added'], glyph:'●',
   },
   spell: {
-    guide:'Bram the rune smith', objective:'Forge a word rune', intro:'My forge is cold! Listen. Spell the word to make a spark.',
+    guide:'Bram the rune smith', objective:'Build the magic sword', intro:'Help me fix the words. Finish a set, then strike the anvil to forge the sword!',
     win:'Your word rune is forged!', miss:'That rune is still cold.', reward:['rune forged','runes forged'], glyph:'◆',
   },
   sort: {

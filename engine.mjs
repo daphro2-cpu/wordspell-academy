@@ -1,4 +1,4 @@
-import {bookWords, labels} from './bank.mjs';
+import {bookWords, labels} from './bank.mjs?v=forge-workbench';
 
 export const modes = [
   {id:'listen', title:'Echo Tower', skill:'Hear & identify', description:'Listen closely and choose the sound you hear.', icon:'◖))', color:'mint'},
@@ -151,6 +151,24 @@ function keyedOptions(answer, entries, getKey, count, rng) {
   return shuffle([answer,...shuffle(others,rng).slice(0,count-1)],rng);
 }
 
+const blendLetterContrasts={
+  pl:[0,'b'],bl:[0,'p'],cl:[0,'g'],gl:[0,'c'],fl:[0,'v'],sl:[0,'z'],
+  pr:[0,'b'],br:[0,'p'],cr:[0,'g'],gr:[0,'c'],fr:[0,'v'],tr:[0,'d'],dr:[0,'t'],
+  sp:[1,'b'],st:[1,'d'],sk:[1,'g'],sc:[1,'k'],sm:[1,'n'],sn:[1,'m'],
+  spl:[2,'r'],spr:[2,'l'],scr:[1,'p'],str:[1,'p'],
+};
+const similarLetters={
+  a:'eou',e:'aiu',i:'eau',o:'uae',u:'oae',b:'pdv',p:'btd',
+  d:'tbz',t:'dpk',c:'kg',k:'gc',g:'kc',s:'zct',z:'sd',
+  f:'vpt',v:'fb',m:'nb',n:'mgt',l:'rwb',r:'lwd',y:'ie',
+  h:'kfs',w:'vry',j:'gdz',
+};
+function spellingContrast(entry) {
+  const contrast=blendLetterContrasts[entry.pattern];
+  if(!contrast||!entry.word.toLowerCase().startsWith(entry.pattern))return spellingMask(entry);
+  const [index,other]=contrast;
+  return {mask:entry.word.slice(0,index)+'_'+entry.word.slice(index+1),answer:entry.word[index],other};
+}
 function spellingMask(entry) {
   const {word,pattern}=entry;
   if (pattern.endsWith('_e')) {
@@ -197,14 +215,15 @@ function question(mode,book,e,all,level,rng,group) {
   }
   if (mode==='blend') return {...base,prompt:'Spin. Say the sounds. Read the word.',correct:e.word};
   if (mode==='segment') {
-    return {...base,prompt:'Say it slowly. Add one drop for each sound.',correct:e.tiles.length,audio:true};
+    return {...base,prompt:'Say the sounds apart.',correct:e.tiles.length,audio:true};
   }
   if (mode==='spell') {
-    const missing=level.rank===0?spellingMask(e):{mask:null,answer:e.word};
+    const missing=level.rank===0?spellingContrast(e):{mask:null,answer:e.word};
     const correct=missing.answer.replace('_','').toLowerCase();
     const alphabet=[...'abcdefghijklmnopqrstuvwxyz'];
-    const decoys=shuffle(alphabet.filter(letter=>!correct.includes(letter)),rng).slice(0,level.rank===0?2:4);
-    const letters=level.rank===2?alphabet:shuffle([...new Set(correct),...decoys],rng);
+    const choices=[...new Set([...correct,...(missing.other??''),...[...correct].flatMap(letter=>[...(similarLetters[letter]??'')])])];
+    const count=missing.other?2:level.rank===0?new Set(correct).size+2:new Set(correct).size+4;
+    const letters=level.rank===2?alphabet:shuffle(choices.slice(0,count),rng);
     return {...base,prompt:missing.mask?'Listen. Fill in the missing letters.':'Listen. Tap the letters to spell it.',mask:missing.mask,correct,letters,audio:true};
   }
   if (mode==='flight') {

@@ -184,7 +184,8 @@ strip|s t r i p|str|Cut a thin ___ of paper.
 string|s t r i ng|str|Tie a ___ around the box.
 strap|s t r a p|str|My backpack has a broken ___.
 stretch|s t r e tch|str|___ your arms above your head.`,
-    mixed:`plane|p l a_e n|pl|A ___ flew above the clouds.
+    mixed:`skate|s k a_e t|sk|I can ___ on ice.
+plane|p l a_e n|pl|A ___ flew above the clouds.
 slide|s l i_e d|sl|The kids went down the ___.
 float|f l oa t|fl|A cork can ___ on water.
 green|g r ee n|gr|The leaves are ___.

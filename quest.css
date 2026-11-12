@@ -190,7 +190,7 @@ body::before{opacity:.22}
 :root{--base-font:"Trebuchet MS",system-ui,sans-serif;--font:var(--base-font);--heading:var(--font)}
 :root.use-classroom-font{--font:"Classroom Letters",var(--base-font)}
 .word-reels{font-family:var(--font)}
-#guide{--font:var(--base-font);font-family:var(--base-font)}
+#guide{--font:var(--base-font);--heading:var(--base-font);font-family:var(--base-font)}
 .use-classroom-font #classroom-font-preview{font-family:"Classroom Letters",var(--base-font)}
 .classroom-font{display:grid;gap:4px;margin:12px 0}
 .classroom-font small{line-height:1.35}
@@ -287,3 +287,92 @@ body::before{opacity:.22}
 @keyframes swing-sound-door{from{transform:rotateY(0)}to{transform:rotateY(-72deg)}}
 @keyframes door-light{from{opacity:0}to{opacity:1}}
 @media(prefers-reduced-motion:reduce){.door-open .door-leaf{animation:none;transform:rotateY(-72deg)}.door-reveal{animation:none}}
+
+/* Blend Bridge reels, lever and plank placement. */
+.reel-machine{display:flex;align-items:center;gap:12px;margin:16px 0;max-width:100%}
+.reel-machine .word-reels{--reel-size:clamp(32px,6vw,70px);display:flex;gap:4px;min-height:0;min-width:0;margin:0;padding:8px;box-sizing:border-box;background:linear-gradient(#65446e,#38294c);border-width:3px;font-size:calc(var(--reel-size)*.65);color:#352247}
+.reel-machine .reel-window{position:relative;display:grid;min-width:.86em;width:var(--reel-size);height:calc(var(--reel-size)*1.35);place-items:center;overflow:hidden;border-radius:9px;background:linear-gradient(#dbc79b,#fff5dc 34% 69%,#ddc598);box-shadow:inset 0 0 0 1px #f8df9d}
+.reel-machine .word-reels[aria-hidden] span{padding:0;color:inherit}
+.reel-window .reel-face{white-space:nowrap}
+.reel-running .reel-face,.reel-stopped .reel-strip{visibility:hidden}
+.reel-strip{position:absolute;inset:0 0 auto;display:grid;animation:cycle-reel .26s linear infinite}
+.reel-strip>span{display:grid;place-items:center;height:calc(var(--reel-size)*1.35)}
+.reel-running:nth-child(even) .reel-strip{animation-duration:.33s}
+.reel-stopped .reel-face{animation:reel-stop .18s ease-out}
+@keyframes cycle-reel{to{transform:translateY(calc(-100% + var(--reel-size)*1.35))}}
+@keyframes reel-stop{from{transform:translateY(-16%)}65%{transform:translateY(7%)}to{transform:none}}
+.spin-lever{position:relative;flex:0 0 50px;min-height:86px;align-self:center;padding:43px 2px 2px;border:2px solid #b99160;border-radius:14px;background:#483653;color:#ffe7a6;box-shadow:0 4px #25152e;font-weight:800;touch-action:none}
+.spin-lever:disabled{opacity:1}
+.lever-arm{position:absolute;top:7px;left:calc(50% - 4px);width:8px;height:38px;border-radius:6px;background:linear-gradient(90deg,#a5794a,#ffe3a2,#9f733b);transform-origin:center 92%;transform:rotate(var(--pull,-20deg));pointer-events:none}
+.lever-arm::before{content:"";position:absolute;top:-5px;left:-8px;width:24px;height:24px;border-radius:50%;background:radial-gradient(circle at 33% 27%,#ffe794 0,#e98151 39%,#b43452 80%);box-shadow:0 2px 5px #231a30}
+.spin-lever.pulled .lever-arm{animation:pull-lever .56s ease-out}
+.spin-lever:active .lever-arm{transform:rotate(var(--pull,43deg))}
+@keyframes pull-lever{0%,100%{transform:rotate(-20deg)}45%{transform:rotate(50deg)}}
+.read-controls{margin:10px 0}
+.read-controls .mic-status:not(:empty){color:#ffebba;font-weight:750;margin:9px 0}
+.read-controls .mic-status:empty{display:none}
+.read-controls .teacher-check{margin:8px 0 12px}
+.read-controls .teacher-word summary{padding:5px 0}
+.bridge-scene{max-width:640px}
+.bridge-deck{padding:41px 10px 10px;background:repeating-linear-gradient(158deg,transparent 0 11px,#7fdaea28 12px 14px,transparent 15px 31px),linear-gradient(160deg,#184b61,#327890 55%,#164761);border-color:#83c7d6}
+.bridge-deck .bridge-track{width:100%;gap:5px}
+.bridge-slot{min-width:0;position:relative}
+.bridge-deck .bridge-track i{height:47px;border:2px dashed #d1edf0a1;border-radius:6px;background:#0d3548a6}
+.bridge-deck .bridge-track .plank{border:2px solid #ffe2a1;background:repeating-linear-gradient(88deg,#a75c30 0 3px,#eaba72 3px 10px,#cd8b4b 10px 13px);box-shadow:0 4px #603729,inset 0 0 7px #80432a}
+.bridge-deck .bridge-track .fresh{animation:place-plank 1.14s ease-out both}
+.finn-at-work{position:absolute;z-index:2;pointer-events:none;right:8%;bottom:22px;width:94px;height:75px;background:url('./assets/finn-building.webp') center/contain no-repeat;animation:finn-places-plank 1.45s ease-in-out both}
+.finn-carrying{position:absolute;left:71%;top:59%;width:29px;height:11px;border-radius:3px;border:1px solid #ffe3a3;background:#dc9e5d;transform:rotate(-10deg);animation:finn-sets-down .9s linear both}
+@keyframes finn-places-plank{0%{opacity:0;transform:translate(calc(-22px - var(--steps)*12px),-11px)}18%{opacity:1}58%{transform:translate(-5px,-7px)}72%{opacity:1;transform:translate(2px,4px)}100%{opacity:0;transform:translate(-5px,-13px)}}
+@keyframes finn-sets-down{0%,78%{opacity:1}100%{opacity:0}}
+@keyframes place-plank{0%,68%{opacity:0;transform:translateY(-18px) rotate(-8deg)}100%{opacity:1;transform:none}}
+@media(max-width:480px){.reel-machine{gap:7px}.reel-machine .word-reels{gap:2px;padding:4px}.spin-lever{flex-basis:37px}.bridge-deck .bridge-track{gap:3px}.bridge-deck .bridge-track i{height:39px}.finn-at-work{width:75px;height:63px}}
+@media(prefers-reduced-motion:reduce){.reel-strip,.reel-stopped .reel-face,.spin-lever.pulled .lever-arm,.finn-at-work,.finn-carrying{animation:none}.finn-carrying{display:none}}
+
+/* The objects drift above their word tags and drop to the shelf. */
+.flight-picker{display:flex;gap:8px;margin:8px 0 4px;padding-inline:clamp(14px,2vw,22px)}
+.flight-picker [aria-pressed=true]{background:#ffda85;color:#2d1d3d;border-color:#f7c875}
+.flying-yard{align-items:center;min-height:138px;padding:12px 0;gap:14px}
+.flying-yard .flying-tag{min-width:90px;min-height:111px;background:#392848a8;color:#ffefc2;border-color:#dfb87a;border-radius:16px;padding:4px 8px 7px;animation:drift-object 3s ease-in-out infinite;animation-delay:calc(var(--drift) * -.62s)}
+.flying-tag .flying-object{width:86px;height:72px;object-fit:contain;filter:drop-shadow(0 6px 8px #140d25)}
+.flying-tag>span{font-size:clamp(18px,4vw,25px)}
+.flying-yard .flying-tag:hover,.flying-yard .flying-tag:focus-visible,.flying-yard .flying-tag:disabled{animation-play-state:paused}
+.flying-yard .flying-tag.correct .flying-object{animation:object-drops .68s ease-in both}
+.object-shelf{align-items:end;min-height:56px}
+.object-shelf .flying-object{width:40px;height:36px;object-fit:contain}
+.object-shelf .just-landed{animation:show-landed .2s .55s both}
+@keyframes drift-object{0%,100%{transform:translate(-4px,5px) rotate(-4deg)}50%{transform:translate(5px,-9px) rotate(4deg)}}
+@keyframes object-drops{0%{transform:none;opacity:1}70%{transform:translateY(47px) scale(.65);opacity:1}100%{transform:translateY(65px) scale(.4);opacity:0}}
+@keyframes show-landed{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.flying-yard .flying-tag,.flying-yard .flying-tag.correct .flying-object,.object-shelf .just-landed{animation:none}.flying-yard .flying-tag.correct .flying-object{opacity:.2}}
+
+/* Spelling Forge workbench. */
+.forge-cards{display:flex;flex-wrap:wrap;gap:9px;margin:12px 0}
+.forge-card{display:grid;gap:6px;min-width:93px;padding:5px;border:1px solid #b8875a;border-radius:12px;background:#59364cd9}
+.forge-card [data-forge-card]{font-size:1.12rem;letter-spacing:.045em}
+.forge-card [aria-pressed=true]{background:#ffdf9b;color:#372146;border-color:#fff4bd}
+.forge-card.repaired [data-forge-card]{background:#c9e7aa;color:#2c4029;opacity:1}
+.forge-card .audio{font-size:.78rem;padding:4px 7px;min-height:34px}
+.forge-anvil{position:relative;width:min(410px,100%);height:130px;margin:8px 0 17px;border:1px solid #cd946b;border-radius:16px;background:radial-gradient(ellipse at 65% 65%,#774938,#32263d 75%);overflow:hidden;isolation:isolate}
+.magic-sword{position:absolute;display:flex;align-items:center;left:8%;top:42%;width:83%;height:32px;filter:drop-shadow(0 3px 2px #241529);z-index:2}
+.sword-grip{width:16%;height:13px;border-radius:6px;background:repeating-linear-gradient(90deg,#b26f3c 0 5px,#583442 5px 8px);border:2px solid #f2b56c}
+.sword-guard{width:7%;height:32px;border-radius:5px;background:linear-gradient(#fff1a2,#df9d44 58%,#8c4f38);border:1px solid #ffdf99}
+.sword-blade{position:relative;flex:1;height:25px;clip-path:polygon(0 14%,86% 14%,100% 50%,86% 86%,0 86%);background:#57465c;box-shadow:inset 0 0 0 2px #b4939f}
+.sword-blade::after{content:"";position:absolute;inset:0 auto 0 0;width:var(--forged);background:linear-gradient(#ffcd85,#fff7cc 44%,#d18f5a 50%,#d4986a 72%,#703b45)}
+.anvil-shape{position:absolute;left:23%;bottom:7px;width:52%;height:49px;background:linear-gradient(#aa91a0,#56445e 47%,#261d33);clip-path:polygon(0 0,100% 0,81% 34%,64% 39%,64% 72%,83% 80%,87% 100%,18% 100%,20% 80%,36% 72%,36% 38%,17% 35%)}
+.forge-hammer{position:absolute;right:25%;top:13px;width:30px;height:12px;z-index:3;opacity:0;border:1px solid #ffdb9a;border-radius:3px;background:#d6a66c;transform-origin:75% 30%}
+.forge-hammer::after{content:"";position:absolute;left:22px;top:6px;width:7px;height:28px;border-radius:3px;background:#b47146}
+.forge-sparks{position:absolute;left:46%;top:15px;z-index:4;color:#fff0a0;font-size:1.8rem;opacity:0;text-shadow:0 0 13px #ffb049}
+.hammering .forge-hammer{animation:forge-hit .85s ease-in-out}
+.hammering .forge-sparks{animation:forge-spark .6s .38s ease-out}
+.hammering .sword-blade::after{animation:forge-blade .8s .32s both}
+.sword-complete .magic-sword{filter:drop-shadow(0 0 10px #ffde91)}
+@keyframes forge-hit{0%{opacity:0;transform:translateY(-14px) rotate(-35deg)}35%{opacity:1;transform:rotate(-30deg)}51%{opacity:1;transform:translate(-22px,32px) rotate(35deg)}100%{opacity:0;transform:translateY(-12px) rotate(-20deg)}}
+@keyframes forge-spark{0%{opacity:0;transform:scale(.5)}35%{opacity:1}100%{opacity:0;transform:translateY(-16px) scale(1.25)}}
+@keyframes forge-blade{from{width:var(--prior)}to{width:var(--forged)}}
+.potion-steps{display:flex;flex-wrap:wrap;gap:6px 24px;padding-left:24px;color:#fff1cc;font-weight:700}
+.potion-demo .demo-sounds{display:flex;gap:6px;margin:6px 0}
+.demo-sounds span{display:grid;place-items:center;width:34px;height:36px;background:#ffedc3;color:#35274b;border-radius:8px;font-size:1.14rem;font-weight:800}
+.sound-drops{display:flex;gap:8px;min-height:22px;margin:8px 0}
+.sound-drops span{width:19px;height:19px;transform:rotate(-45deg);border-radius:60% 5% 60% 60%;background:linear-gradient(#ccffff,#4dd9c9);border:1px solid #e5fff9;box-shadow:0 0 8px #71e8d780}
+.sound-drops span:last-child{animation:rise .25s ease-out}
+@media(prefers-reduced-motion:reduce){.hammering .forge-hammer,.hammering .forge-sparks,.hammering .sword-blade::after,.sound-drops span:last-child{animation:none}}
