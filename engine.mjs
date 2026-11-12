@@ -288,8 +288,10 @@ export function createRound({book, mode, level, group='all', review},rng=Math.ra
     }
   }
   for(const entry of pool) if(!selected.some(e=>e.word===entry.word)) selected.push(entry);
-  return selected.slice(0,review?selected.length:settings.count)
-    .map(e=>question(mode,book,e,all,settings,rng,group));
+  const chosen=mode==='flight'&&!review&&selected.length
+    ? Array.from({length:5},(_,i)=>selected[i%selected.length])
+    : selected.slice(0,review?selected.length:settings.count);
+  return chosen.map(e=>question(mode,book,e,all,settings,rng,group));
 }
 
 export const uiPattern = key => key.includes('_') ? key.replace('_',' · ') : choiceLabel(key);

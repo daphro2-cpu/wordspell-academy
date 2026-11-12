@@ -27,5 +27,5 @@ export const missions = {
 
 export const flightMission={
   guide:'Orla the owl',objective:'Bring the flying things back',intro:'My spell made everything fly! Hear the word. Tap it to put one thing back!',
-  win:'Back in its place!',miss:'That one is still flying.',reward:['thing put back','things put back'],
+  win:'Back in its place!',miss:'That word flew away.',reward:['thing put back','things put back'],
 };

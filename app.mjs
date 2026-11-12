@@ -1,13 +1,38 @@
 import {catalog} from './bank.mjs?v=forge-workbench';
-import {modes,levels,createRound,sortingBoard,practiceContrasts,shuffle,choiceLabel,isVowelTile} from './engine.mjs?v=word-flight';
+import {modes,levels,createRound,sortingBoard,practiceContrasts,shuffle,choiceLabel,isVowelTile} from './engine.mjs?v=moonlit-flight';
 
-import {missions,flightMission} from './missions.mjs?v=forge-workbench';
+import {missions,flightMission} from './missions.mjs?v=moonlit-flight';
 import {makeStory} from './story.mjs?v=story-clues';
 import {reviewPicture} from './review.mjs?v=forge-workbench';
 
 const by=id=>document.getElementById(id);
 const lobby=by('lobby'), play=by('play'), guide=by('guide');
 const audio=new Audio();
+const flightMusic=by('flight-music');
+const flightEffect=new Audio();
+flightEffect.volume=.42;
+const flightTime={simple:22,medium:19,difficult:16};
+let flightClock;
+let flightTransition;
+let promptWatchdog;
+const musicKey='wordspell-flight-music';
+let musicEnabled=true;
+let promptPlaying=false;
+try {musicEnabled=localStorage.getItem(musicKey)!=='off';} catch {}
+flightMusic.volume=.13;
+function syncFlightMusic(){
+  const inFlight=active?.settings.variant==='flight'&&['live','caught','missed'].includes(active.flightPhase)&&active.index<active.questions.length;
+  const teacherSpeaking=voicePreference==='teacher'&&active?.teacherOpen;
+  if(inFlight&&musicEnabled&&!promptPlaying&&!teacherSpeaking&&!document.hidden){
+    if(flightMusic.paused)flightMusic.play().catch(()=>{});
+  } else flightMusic.pause();
+}
+function finishAudioPrompt(request){
+  if(request!==soundRequest)return;
+  clearTimeout(promptWatchdog);
+  promptPlaying=false;
+  syncFlightMusic();
+}
 const defaultFocus={1:'vowels',2:'magic',3:'two'};
 const focusOptions=book=>({...catalog[book].groups,...practiceContrasts(book)});
 let active;
@@ -57,16 +82,22 @@ function stopListening(){
   try {listener.abort();} catch {}
 }
 function stopSound(){
+  clearTimeout(promptWatchdog);
   soundRequest++;
+  promptPlaying=false;
   audio.pause();
   speech?.cancel();
 }
 function playBundled(word,request){
   if (request!==soundRequest)return;
   audio.src=new URL('./audio/'+encodeURIComponent(word.toLowerCase())+'.mp3',import.meta.url).href;
-  audio.play().catch(()=>{
+  audio.onended=()=>finishAudioPrompt(request);
+  const unavailable=()=>{
     if(request===soundRequest)by('live').textContent='Audio is unavailable. Open Teacher word to read the prompt.';
-  });
+    finishAudioPrompt(request);
+  };
+  audio.onerror=unavailable;
+  audio.play().catch(unavailable);
 }
 function say(word,preview=false){
   stopSound();
@@ -74,14 +105,19 @@ function say(word,preview=false){
   const voice=voiceChoice();
   if(voice==='teacher'){
     by('live').textContent='Teacher reads mode is on. Open Teacher word or Teacher recordings.';
+    syncFlightMusic();
     return;
   }
+  promptPlaying=true;
+  if(active?.settings.variant==='flight')promptWatchdog=setTimeout(()=>finishAudioPrompt(request),6000);
+  syncFlightMusic();
   if(voice==='bundled'){playBundled(word,request);return;}
   const message=preview?'Listen carefully. Can you find the word that completes the spell?':word;
   const clip=new SpeechSynthesisUtterance(message);
   clip.voice=voice;
   clip.lang='en-US';
   clip.rate=.92;
+  clip.onend=()=>finishAudioPrompt(request);
   clip.onerror=event=>{
     if(!['canceled','interrupted'].includes(event.error))playBundled(word,request);
   };
@@ -143,25 +179,29 @@ function selectionUi(){
 selectionUi();
 
 function start(settings) {
+  stopFlightRun();
   stopListening();
   stopSound();
   const board=settings.mode==='sort'?sortingBoard(settings):null;
   const questions=board?.cards??(settings.mode==='context'
     ? makeStory(settings).map(page=>({...page,options:shuffle([...page.targets,...page.decoys])}))
     : createRound({...settings,mode:settings.variant==='flight'?'flight':settings.mode}));
-  active={settings,questions,index:0,board,clouds:new Set(),sorted:new Set(),boardMessage:'',drops:0,hatched:false,mistakes:[],score:0,verdict:null,selected:null,spin:false,micMessage:'',spelling:'',forgeStart:0,forgeIndex:0,forgeSolved:new Set(),forgeDrafts:new Map(),forgeStriking:false,forgeMessage:'',revealed:new Set(),found:new Set(),storyMessage:'',teacherOpen:false,outcomes:[],earned:false,flightStarted:performance.now()};
+  active={settings,questions,index:0,board,clouds:new Set(),sorted:new Set(),boardMessage:'',drops:0,hatched:false,mistakes:[],score:0,verdict:null,selected:null,spin:false,micMessage:'',spelling:'',forgeStart:0,forgeIndex:0,forgeSolved:new Set(),forgeDrafts:new Map(),forgeStriking:false,forgeMessage:'',revealed:new Set(),found:new Set(),storyMessage:'',teacherOpen:false,outcomes:[],earned:false,flightStarted:performance.now(),flightPhase:'ready',flightRemaining:flightTime[settings.level]*1000};
   lobby.hidden=true;
   play.hidden=false;
   history.replaceState(null,'','#play');
   render();
+  syncFlightMusic();
   play.scrollIntoView({block:'start'});
   play.querySelector('h1').focus({preventScroll:true});
 }
 function returnToLobby(){
+  stopFlightRun();
   stopListening();
   stopSound();
   const last=active?.settings.mode;
   active=null;
+  syncFlightMusic();
   play.hidden=true;
   lobby.hidden=false;
   renderMap();
@@ -193,7 +233,7 @@ function render() {
     return;
   }
   const q=question();
-  const audioControls=q.audio?'<div class="play-actions">'+audioButton(q.entry.word)+'</div><details class="teacher-word" '+(active.teacherOpen?'open':'')+'><summary>Teacher word</summary><p>'+esc(q.entry.word)+'</p>'+'</details>':'';
+  const audioControls=q.audio?(q.mode==='flight'?'':'<div class="play-actions">'+audioButton(q.entry.word)+'</div>')+'<details class="teacher-word" '+(active.teacherOpen?'open':'')+'><summary>Teacher word</summary><p>'+esc(q.entry.word)+'</p>'+'</details>':'';
   let body;
   switch(q.mode){
     case 'blend': body=blend(q);break;
@@ -203,7 +243,7 @@ function render() {
   }
   const verdict=active.verdict;
   const feedback=verdict===null?'':'<div class="answer-feedback '+(verdict?'':'missed')+'" tabindex="-1" id="feedback"><strong>'+esc(verdict?mission.win:mission.miss)+'</strong> <span>'+esc(q.entry.word)+'</span><details class="teacher-word"><summary>Teacher tip</summary><p>'+esc(q.explanation)+'</p></details></div>';
-  const next=verdict===null?'':'<div class="play-actions"><button class="primary" type="button" data-action="next">'+(index+1===questions.length?'Finish':'Next word')+' →</button>'+audioButton(q.entry.word,'Hear the word')+'</div>';
+  const next=verdict===null||q.mode==='flight'?'':'<div class="play-actions"><button class="primary" type="button" data-action="next">'+(index+1===questions.length?'Finish':'Next word')+' →</button>'+audioButton(q.entry.word,'Hear the word')+'</div>';
   const track=mode.id==='blend'?bridgeProgress(questions.length):mode.id==='segment'?cauldron():'';
   play.innerHTML=top+`<article class="stage mission scene-${mode.id}">
     <header class="mission-header"><div><h1 tabindex="-1">${settings.variant==='flight'?'Flying Things':esc(mode.title)}</h1><p class="mission-objective">${esc(mission.objective)}</p></div>
@@ -212,7 +252,10 @@ function render() {
     ${mode.id==='listen'?'<div class="flight-picker" role="group" aria-label="Echo Tower games"><button type="button" class="quiet" data-action="doors" aria-pressed="'+(settings.variant!=='flight')+'">Sound Doors</button><button type="button" class="quiet" data-action="flight" aria-pressed="'+(settings.variant==='flight')+'">Flying Things</button></div>':''}
     <div class="scene-grid"><div class="task"><h2>${esc(q.prompt)}</h2>${track}${audioControls}${body}${feedback}${next}</div>${guideView(mission,verdict)}</div>
   </article>`;
-  play.querySelector('details')?.addEventListener('toggle',e=>{if(active) active.teacherOpen=e.target.open;});
+  play.querySelector('details')?.addEventListener('toggle',e=>{
+    if(active)active.teacherOpen=e.target.open;
+    syncFlightMusic();
+  });
   play.querySelector('.potion-demo')?.addEventListener('toggle',e=>{if(active)active.demoOpen=e.target.open;});
 }
 function sortView(mission) {
@@ -253,37 +296,118 @@ function sortWord(index,portal) {
   render();
   (play.querySelector('[data-action=finishSort]')??play.querySelector('[data-portal="'+portal+'"]'))?.focus({preventScroll:true});
 }
-const flyingObjects=['key','book','feather','wand'];
-function flyingObject(index){
-  const name=flyingObjects[index%flyingObjects.length];
-  return '<img src="./assets/flying-'+name+'.webp" alt="" class="flying-object">';
+function flightPicture(word){
+  const picture=reviewPicture(word);
+  if(!picture)return '';
+  return picture.src?'<img src="'+esc(picture.src)+'" alt="" class="flying-object">':
+    '<span class="flight-picture-icon" aria-hidden="true">'+esc(picture.icons)+'</span>';
 }
 const flightSpeeds=[6.8,8.1,7.2,8.8,7.6];
 const flightPhases=[0.8,5.2,2.8,6.1,1.7];
 function flightView(q){
+  const {flightPhase,flightStarted,flightPausedAt}=active;
+  const waiting=flightPhase==='ready';
+  const paused=flightPhase==='paused';
+  const flying=flightPhase==='live';
   const shelf=active.outcomes.flatMap((correct,i)=>correct?[i]:[]);
-  const elapsed=(performance.now()-active.flightStarted)/1000;
-  return `<div class="flying-yard" role="group" aria-label="Flying word tags">${q.options.map((word,i)=>{
-    const objectIndex=word===q.correct?active.index:active.index+1+q.options.filter(option=>option!==q.correct).indexOf(word);
-    const caught=active.verdict===true&&word===q.correct;
-    const timing='--lane:'+i+';--duration:'+flightSpeeds[i]+'s;--offset:'+(-(flightPhases[i]+elapsed))+'s';
-    return '<div class="flight-lane" style="'+timing+'"><button type="button" class="flying-tag'+(caught?' caught':'')+'" data-choice="'+i+'" '+(active.verdict===null?'':'disabled')+'>'+flyingObject(objectIndex)+'<span>'+esc(word)+'</span></button></div>';
-  }).join('')}</div>
+  const elapsed=((paused?flightPausedAt:performance.now())-flightStarted)/1000;
+  const controls=waiting?'<button type="button" class="primary" data-action="startFlight">Start flight</button>':
+    paused?'<button type="button" class="primary" data-action="resumeFlight">Resume</button>':
+    flying?'<button type="button" class="quiet" data-action="pauseFlight">Pause</button>'+audioButton(q.entry.word,'Hear again'):'';
+  const ready=waiting?'<p>Listen for five words, one at a time. Catch each one before it flies away.</p>':'';
+  const remaining=Math.max(0,Math.ceil(active.flightRemaining/1000));
+  return `<div class="flight-toolbar">${controls}<button type="button" class="quiet flight-music-toggle" data-action="toggleMusic" aria-pressed="${musicEnabled}" aria-label="Background music">♫ Music ${musicEnabled?'on':'off'}</button></div>
+    ${ready}<div class="flight-time">${waiting?'':'<label for="flight-clock">Time left</label><progress id="flight-clock" value="'+active.flightRemaining+'" max="'+(flightTime[active.settings.level]*1000)+'"></progress><span id="flight-seconds">'+remaining+' s</span>'}</div>
+    <div class="flying-yard ${waiting||paused?'flight-paused':''} ${flightPhase==='missed'?'flight-escaping':''}" role="group" aria-label="Flying words">${q.options.map((word,i)=>{
+      const caught=flightPhase==='caught'&&word===q.correct;
+      const timing='--duration:'+flightSpeeds[i]+'s;--offset:'+(-(flightPhases[i]+elapsed))+'s';
+      return '<div class="flight-lane" style="'+timing+'"><button type="button" class="flying-tag'+(caught?' caught':'')+'" data-choice="'+i+'" '+(flying?'':'disabled')+'><span>'+esc(word)+'</span></button></div>';
+    }).join('')}</div>
     <p class="story-status flight-status" role="status">${esc(active.boardMessage)}</p>
-    <div class="object-shelf" aria-label="${shelf.length} ${shelf.length===1?'thing':'things'} put back">${shelf.map(i=>'<span '+(i===active.index?'class="just-landed"':'')+' aria-hidden="true">'+flyingObject(i)+'</span>').join('')}</div>`;
+    <div class="object-shelf" aria-label="${shelf.length} ${shelf.length===1?'word':'words'} caught">${shelf.map(i=>{
+      const word=active.questions[i].entry.word;
+      return '<span class="flight-trophy '+(i===active.index?'just-landed':'')+'">'+flightPicture(word)+'<span>'+esc(word)+'</span></span>';
+    }).join('')}</div>`;
+}
+function stopFlightRun(){
+  clearInterval(flightClock);
+  clearTimeout(flightTransition);
+  flightEffect.pause();
+}
+function playFlightEffect(correct){
+  flightEffect.src=new URL('./audio/flight-'+(correct?'catch':'try')+'.mp3',import.meta.url).href;
+  flightEffect.play().catch(()=>{});
+}
+function startFlight(){
+  if(active.flightPhase!=='ready')return;
+  const session=active;
+  let last=performance.now();
+  active.flightPhase='live';
+  active.flightStarted=last;
+  render();
+  say(question().entry.word);
+  focusOption('[data-action=pauseFlight]');
+  flightClock=setInterval(()=>{
+    const now=performance.now();
+    if(active===session&&active.flightPhase==='live'&&!promptPlaying&&!document.hidden&&!(voicePreference==='teacher'&&active.teacherOpen)){
+      active.flightRemaining=Math.max(0,active.flightRemaining-(now-last));
+      const clock=by('flight-clock');
+      if(clock)clock.value=active.flightRemaining;
+      const seconds=by('flight-seconds');
+      if(seconds)seconds.textContent=Math.ceil(active.flightRemaining/1000)+' s';
+      if(active.flightRemaining===0)missFlyingWord();
+    }
+    last=now;
+  },100);
+}
+function pauseFlight(){
+  if(active.flightPhase!=='live')return;
+  active.flightPhase='paused';
+  active.flightPausedAt=performance.now();
+  stopSound();
+  syncFlightMusic();
+  render();
+  focusOption('[data-action=resumeFlight]');
+}
+function resumeFlight(){
+  if(active.flightPhase!=='paused')return;
+  active.flightStarted+=performance.now()-active.flightPausedAt;
+  active.flightPhase='live';
+  render();
+  say(question().entry.word);
+  focusOption('[data-action=pauseFlight]');
+}
+function queueFlightWord(){
+  const session=active;
+  flightTransition=setTimeout(()=>{
+    if(active!==session)return;
+    advance();
+  },1150);
+}
+function missFlyingWord(){
+  active.flightPhase='missed';
+  active.boardMessage='That word flew away. Listen for the next one.';
+  respond(null,false);
+  queueFlightWord();
 }
 function catchFlyingWord(button,word){
   const start=button.getBoundingClientRect();
+  stopSound();
+  active.flightPhase='caught';
+  syncFlightMusic();
   respond(word,true);
+  playFlightEffect(true);
   const caught=play.querySelector('.flying-tag.caught');
   const landing=play.querySelector('.object-shelf .just-landed');
-  if(!caught||!landing)return;
-  const lane=caught.parentElement.getBoundingClientRect();
-  const end=landing.getBoundingClientRect();
-  caught.style.setProperty('--caught-x',start.left-lane.left+'px');
-  caught.style.setProperty('--caught-y',start.top-lane.top+'px');
-  caught.style.setProperty('--shelf-x',end.left-start.left+'px');
-  caught.style.setProperty('--shelf-y',end.top-start.top+'px');
+  if(caught&&landing){
+    const lane=caught.parentElement.getBoundingClientRect();
+    const end=landing.getBoundingClientRect();
+    caught.style.setProperty('--caught-x',start.left-lane.left+'px');
+    caught.style.setProperty('--caught-y',start.top-lane.top+'px');
+    caught.style.setProperty('--shelf-x',end.left-start.left+'px');
+    caught.style.setProperty('--shelf-y',end.top-start.top+'px');
+  }
+  queueFlightWord();
 }
 function restoredText(page,found) {
   return esc(page.sentence).replace(/\{([^}]+)\}/g,(_,word)=>found.has(word.toLowerCase())
@@ -678,7 +802,15 @@ function advance(){
   stopSound();
   active.index++;
   active.flightStarted=performance.now();
-  if(active.index===active.questions.length)awardRune();
+  if(active.settings.variant==='flight'){
+    active.flightPhase=document.hidden?'paused':'live';
+    active.flightPausedAt=active.flightStarted;
+    active.flightRemaining=flightTime[active.settings.level]*1000;
+  }
+  if(active.index===active.questions.length){
+    stopFlightRun();
+    awardRune();
+  }
   active.drops=0;
   active.boardMessage='';
   active.spin=false;
@@ -688,7 +820,13 @@ function advance(){
   active.verdict=null;
   active.teacherOpen=false;
   render();
-  play.querySelector('h1').focus({preventScroll:true});
+  if(active.settings.variant==='flight'&&active.flightPhase==='live'&&active.index<active.questions.length){
+    say(question().entry.word);
+    focusOption('[data-action=pauseFlight]');
+  } else {
+    syncFlightMusic();
+    play.querySelector('h1').focus({preventScroll:true});
+  }
 }
 function focusOption(selector){
   (play.querySelector(selector+':not(:disabled)')??play.querySelector('.tile:not(:disabled)')??play.querySelector('[data-action=check]:not(:disabled)'))?.focus({preventScroll:true});
@@ -725,6 +863,17 @@ const actions={
     awardRune();
     render();
     play.querySelector('h1')?.focus({preventScroll:true});
+  },
+  startFlight,
+  pauseFlight,
+  resumeFlight,
+  toggleMusic:()=>{
+    musicEnabled=!musicEnabled;
+    try {localStorage.setItem(musicKey,musicEnabled?'on':'off');} catch {}
+    const toggle=play.querySelector('.flight-music-toggle');
+    toggle.textContent='♫ Music '+(musicEnabled?'on':'off');
+    toggle.setAttribute('aria-pressed',String(musicEnabled));
+    syncFlightMusic();
   },
   flight:()=>{if(active.settings.variant!=='flight')start({...active.settings,variant:'flight',review:undefined});},
   doors:()=>{if(active.settings.variant==='flight')start({...active.settings,variant:undefined,review:undefined});},
@@ -813,12 +962,16 @@ document.addEventListener('click',e=>{
   if(d.choice!==undefined){
     const chosen=q.options[Number(d.choice)];
     if(q.mode==='flight'){
+      if(active.flightPhase!=='live')return;
       if(chosen===q.correct){
         active.boardMessage='';
         catchFlyingWord(button,chosen);
       } else {
         active.boardMessage='Hear it again. Catch the word you heard.';
         play.querySelector('.flight-status').textContent=active.boardMessage;
+        playFlightEffect(false);
+        button.classList.remove('wrong-catch');
+        requestAnimationFrame(()=>button.classList.add('wrong-catch'));
       }
       return;
     }
@@ -883,10 +1036,15 @@ by('voice-select').addEventListener('change',e=>{
   voicePreference=e.target.value;
   try {localStorage.setItem(voiceStorage,voicePreference);} catch {}
   voiceUi();
+  syncFlightMusic();
   if(active)render();
 });
 by('voice-preview').addEventListener('click',()=>say('spring',true));
 speech?.addEventListener('voiceschanged',voiceUi);
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden&&active?.settings.variant==='flight'&&active.flightPhase==='live')pauseFlight();
+  else syncFlightMusic();
+});
 voiceUi();
 by('fullscreen').addEventListener('click',async()=>{
   try{
