@@ -1,5 +1,5 @@
 import {catalog} from './bank.mjs?v=forge-workbench';
-import {modes,levels,createRound,sortingBoard,practiceContrasts,shuffle,choiceLabel,isVowelTile} from './engine.mjs?v=story-clues';
+import {modes,levels,createRound,sortingBoard,practiceContrasts,shuffle,choiceLabel,isVowelTile} from './engine.mjs?v=word-flight';
 
 import {missions,flightMission} from './missions.mjs?v=forge-workbench';
 import {makeStory} from './story.mjs?v=story-clues';
@@ -149,7 +149,7 @@ function start(settings) {
   const questions=board?.cards??(settings.mode==='context'
     ? makeStory(settings).map(page=>({...page,options:shuffle([...page.targets,...page.decoys])}))
     : createRound({...settings,mode:settings.variant==='flight'?'flight':settings.mode}));
-  active={settings,questions,index:0,board,clouds:new Set(),sorted:new Set(),boardMessage:'',drops:0,hatched:false,mistakes:[],score:0,verdict:null,selected:null,spin:false,micMessage:'',spelling:'',forgeStart:0,forgeIndex:0,forgeSolved:new Set(),forgeDrafts:new Map(),forgeStriking:false,forgeMessage:'',revealed:new Set(),found:new Set(),storyMessage:'',teacherOpen:false,outcomes:[],earned:false};
+  active={settings,questions,index:0,board,clouds:new Set(),sorted:new Set(),boardMessage:'',drops:0,hatched:false,mistakes:[],score:0,verdict:null,selected:null,spin:false,micMessage:'',spelling:'',forgeStart:0,forgeIndex:0,forgeSolved:new Set(),forgeDrafts:new Map(),forgeStriking:false,forgeMessage:'',revealed:new Set(),found:new Set(),storyMessage:'',teacherOpen:false,outcomes:[],earned:false,flightStarted:performance.now()};
   lobby.hidden=true;
   play.hidden=false;
   history.replaceState(null,'','#play');
@@ -258,14 +258,32 @@ function flyingObject(index){
   const name=flyingObjects[index%flyingObjects.length];
   return '<img src="./assets/flying-'+name+'.webp" alt="" class="flying-object">';
 }
+const flightSpeeds=[6.8,8.1,7.2,8.8,7.6];
+const flightPhases=[0.8,5.2,2.8,6.1,1.7];
 function flightView(q){
   const shelf=active.outcomes.flatMap((correct,i)=>correct?[i]:[]);
+  const elapsed=(performance.now()-active.flightStarted)/1000;
   return `<div class="flying-yard" role="group" aria-label="Flying word tags">${q.options.map((word,i)=>{
     const objectIndex=word===q.correct?active.index:active.index+1+q.options.filter(option=>option!==q.correct).indexOf(word);
-    return '<button type="button" class="flying-tag'+optionClass(word,q)+'" data-choice="'+i+'" style="--drift:'+i+'" '+(active.verdict===null?'':'disabled')+'>'+flyingObject(objectIndex)+'<span>'+esc(word)+'</span></button>';
+    const caught=active.verdict===true&&word===q.correct;
+    const timing='--lane:'+i+';--duration:'+flightSpeeds[i]+'s;--offset:'+(-(flightPhases[i]+elapsed))+'s';
+    return '<div class="flight-lane" style="'+timing+'"><button type="button" class="flying-tag'+(caught?' caught':'')+'" data-choice="'+i+'" '+(active.verdict===null?'':'disabled')+'>'+flyingObject(objectIndex)+'<span>'+esc(word)+'</span></button></div>';
   }).join('')}</div>
-    <p class="story-status" role="status">${esc(active.boardMessage)}</p>
-    <div class="object-shelf" aria-label="${shelf.length} things put back">${shelf.map(i=>'<span '+(i===active.index?'class="just-landed"':'')+' aria-hidden="true">'+flyingObject(i)+'</span>').join('')}</div>`;
+    <p class="story-status flight-status" role="status">${esc(active.boardMessage)}</p>
+    <div class="object-shelf" aria-label="${shelf.length} ${shelf.length===1?'thing':'things'} put back">${shelf.map(i=>'<span '+(i===active.index?'class="just-landed"':'')+' aria-hidden="true">'+flyingObject(i)+'</span>').join('')}</div>`;
+}
+function catchFlyingWord(button,word){
+  const start=button.getBoundingClientRect();
+  respond(word,true);
+  const caught=play.querySelector('.flying-tag.caught');
+  const landing=play.querySelector('.object-shelf .just-landed');
+  if(!caught||!landing)return;
+  const lane=caught.parentElement.getBoundingClientRect();
+  const end=landing.getBoundingClientRect();
+  caught.style.setProperty('--caught-x',start.left-lane.left+'px');
+  caught.style.setProperty('--caught-y',start.top-lane.top+'px');
+  caught.style.setProperty('--shelf-x',end.left-start.left+'px');
+  caught.style.setProperty('--shelf-y',end.top-start.top+'px');
 }
 function restoredText(page,found) {
   return esc(page.sentence).replace(/\{([^}]+)\}/g,(_,word)=>found.has(word.toLowerCase())
@@ -659,6 +677,7 @@ function advance(){
   stopListening();
   stopSound();
   active.index++;
+  active.flightStarted=performance.now();
   if(active.index===active.questions.length)awardRune();
   active.drops=0;
   active.boardMessage='';
@@ -793,10 +812,14 @@ document.addEventListener('click',e=>{
   if(d.storyWord){catchWord(d.storyWord);return;}
   if(d.choice!==undefined){
     const chosen=q.options[Number(d.choice)];
-    if(q.mode==='flight'&&chosen!==q.correct){
-      active.boardMessage='Hear it again. Try another word.';
-      render();
-      focusOption('[data-choice="'+d.choice+'"]');
+    if(q.mode==='flight'){
+      if(chosen===q.correct){
+        active.boardMessage='';
+        catchFlyingWord(button,chosen);
+      } else {
+        active.boardMessage='Hear it again. Catch the word you heard.';
+        play.querySelector('.flight-status').textContent=active.boardMessage;
+      }
       return;
     }
     active.boardMessage='';

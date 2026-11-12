@@ -151,6 +151,41 @@ function keyedOptions(answer, entries, getKey, count, rng) {
   return shuffle([answer,...shuffle(others,rng).slice(0,count-1)],rng);
 }
 
+const shortVowelFlightChoices={
+  cat:['cot','cut','cap','bat'],mat:['met','map','cat','man'],map:['mop','nap','mat','cap'],
+  bed:['bad','bid','bet','red'],met:['mat','men','net','pet'],pen:['pan','pin','pet','ten'],
+  sit:['set','sat','sip','fit'],pin:['pen','pan','pig','tin'],pig:['peg','pug','pin','pit'],
+  hot:['hat','hut','hop','pot'],cot:['cat','cut','cop','dot'],pot:['pat','pit','pop','hot'],
+  cut:['cat','cot','cup','hut'],cup:['cap','cop','cut','pup'],sun:['sin','sat','sum','run'],
+};
+
+function spellingDistance(a,b){
+  let row=Array.from({length:b.length+1},(_,i)=>i);
+  for(const [i,letter] of [...a].entries()){
+    const next=[i+1];
+    for(const [j,other] of [...b].entries()){
+      next.push(Math.min(row[j+1]+1,next[j]+1,row[j]+Number(letter!==other)));
+    }
+    row=next;
+  }
+  return row[b.length];
+}
+
+function flightOptions(entry,preferred,rng){
+  const answer=entry.word.toLowerCase();
+  const curated=shortVowelFlightChoices[answer];
+  if(curated)return shuffle([entry.word,...curated],rng);
+  const preferredWords=new Set(preferred.map(item=>item.word.toLowerCase()));
+  const candidates=uniqueWords(Object.values(bookWords).flat())
+    .filter(item=>item.word.toLowerCase()!==answer)
+    .map(item=>{
+      const word=item.word.toLowerCase();
+      return {word:item.word,distance:spellingDistance(answer,word),lengthGap:Math.abs(answer.length-word.length),preferred:preferredWords.has(word)};
+    });
+  const ranked=shuffle(candidates,rng).sort((a,b)=>a.distance-b.distance||a.lengthGap-b.lengthGap||Number(b.preferred)-Number(a.preferred));
+  return shuffle([entry.word,...ranked.slice(0,4).map(item=>item.word)],rng);
+}
+
 const blendLetterContrasts={
   pl:[0,'b'],bl:[0,'p'],cl:[0,'g'],gl:[0,'c'],fl:[0,'v'],sl:[0,'z'],
   pr:[0,'b'],br:[0,'p'],cr:[0,'g'],gr:[0,'c'],fr:[0,'v'],tr:[0,'d'],dr:[0,'t'],
@@ -229,9 +264,7 @@ function question(mode,book,e,all,level,rng,group) {
     return {...base,prompt:missing.mask?'Listen. Fill in the missing letters.':'Listen. Tap the letters to spell it.',mask:missing.mask,correct,letters,audio:true};
   }
   if (mode==='flight') {
-    const close=own.filter(x=>x.word!==e.word&&x.pattern!==e.pattern);
-    const options=[e.word,...shuffle([...new Set(close.map(x=>x.word))],rng).slice(0,level.options-1)];
-    return {...base,prompt:'Hear the word. Tap it to bring it down!',correct:e.word,options:shuffle(options,rng),audio:true};
+    return {...base,prompt:'Hear the word. Catch it!',correct:e.word,options:flightOptions(e,own,rng),audio:true};
   }
   throw new Error('Unknown practice mode: '+mode);
 }

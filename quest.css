@@ -241,16 +241,6 @@ body::before{opacity:.22}
 .word-portal button{width:100%;min-height:50px;border:0;border-radius:32px 32px 5px 5px;background:#e8d6f8;color:#38274a;font-weight:900;font-size:1.3rem}
 .portal-words{display:flex;justify-content:center;flex-wrap:wrap;gap:4px;padding-top:5px}
 .portal-words span{padding:2px 6px;border-radius:5px;color:#38274a;background:#efe0bc}
-.flight-picker{margin-top:10px}
-.flying-yard,.object-shelf{display:flex;flex-wrap:wrap;gap:12px;margin:15px 0}
-.flying-tag{display:grid;justify-items:center;gap:4px;min-width:101px;min-height:92px;padding:8px;border:2px solid #e7c47c;background:#ffebbc;color:#3e2c4b;border-radius:15px 10px 15px 10px;font-size:1.55rem;font-weight:850;box-shadow:0 4px 11px #130c29;animation:float-word 3.5s ease-in-out infinite;animation-delay:calc(var(--drift) * -.62s)}
-.flying-tag span{font-size:1.65rem}
-.flying-tag:hover,.flying-tag:focus-visible,.flying-tag:disabled{animation-play-state:paused}
-.flying-tag.correct{background:#c9f0cf;animation:land-object .45s ease-out both}
-.flying-tag.wrong{background:#f5c6b6}
-.object-shelf{min-height:49px;padding:8px;border-bottom:5px solid #ce9959;border-radius:0 0 9px 9px;background:#371f3c95}
-.object-shelf span{font-size:1.45rem}
-@keyframes land-object{from{transform:translateY(-15px);opacity:.4}to{transform:none;opacity:1}}
 @media(max-width:450px){.letter-bank{grid-template-columns:repeat(auto-fit,minmax(39px,1fr))}.letter-bank .tile{padding:3px}.brew-scene{gap:16px}.potion-egg{flex-shrink:0}}
 @media(prefers-reduced-motion:reduce){.brew-scene *,.found-word,.flying-tag{animation:none!important}.pouring .pour-stream{display:none}}
 
@@ -328,22 +318,28 @@ body::before{opacity:.22}
 @media(max-width:480px){.reel-machine{gap:7px}.reel-machine .word-reels{gap:2px;padding:4px}.spin-lever{flex-basis:37px}.bridge-deck .bridge-track{gap:3px}.bridge-deck .bridge-track i{height:39px}.finn-at-work{width:75px;height:63px}}
 @media(prefers-reduced-motion:reduce){.reel-strip,.reel-stopped .reel-face,.spin-lever.pulled .lever-arm,.finn-at-work,.finn-carrying{animation:none}.finn-carrying{display:none}}
 
-/* The objects drift above their word tags and drop to the shelf. */
+/* Each word travels across its own lane, with no timer on the answer. */
 .flight-picker{display:flex;gap:8px;margin:8px 0 4px;padding-inline:clamp(14px,2vw,22px)}
 .flight-picker [aria-pressed=true]{background:#ffda85;color:#2d1d3d;border-color:#f7c875}
-.flying-yard{align-items:center;min-height:138px;padding:12px 0;gap:14px}
-.flying-yard .flying-tag{min-width:90px;min-height:111px;background:#392848a8;color:#ffefc2;border-color:#dfb87a;border-radius:16px;padding:4px 8px 7px;animation:drift-object 3s ease-in-out infinite;animation-delay:calc(var(--drift) * -.62s)}
-.flying-tag .flying-object{width:86px;height:72px;object-fit:contain;filter:drop-shadow(0 6px 8px #140d25)}
-.flying-tag>span{font-size:clamp(18px,4vw,25px)}
-.flying-yard .flying-tag:hover,.flying-yard .flying-tag:focus-visible,.flying-yard .flying-tag:disabled{animation-play-state:paused}
-.flying-yard .flying-tag.correct .flying-object{animation:object-drops .68s ease-in both}
-.object-shelf{align-items:end;min-height:56px}
-.object-shelf .flying-object{width:40px;height:36px;object-fit:contain}
-.object-shelf .just-landed{animation:show-landed .2s .55s both}
-@keyframes drift-object{0%,100%{transform:translate(-4px,5px) rotate(-4deg)}50%{transform:translate(5px,-9px) rotate(4deg)}}
-@keyframes object-drops{0%{transform:none;opacity:1}70%{transform:translateY(47px) scale(.65);opacity:1}100%{transform:translateY(65px) scale(.4);opacity:0}}
-@keyframes show-landed{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
-@media(prefers-reduced-motion:reduce){.flying-yard .flying-tag,.flying-yard .flying-tag.correct .flying-object,.object-shelf .just-landed{animation:none}.flying-yard .flying-tag.correct .flying-object{opacity:.2}}
+.flying-yard{display:grid;grid-template-rows:repeat(5,minmax(58px,1fr));position:relative;isolation:isolate;min-height:320px;margin:10px 0 0;padding:9px 14px;border:1px solid #c7a47766;border-radius:18px;background:linear-gradient(140deg,#42335840,transparent 54%,#191a3c75)}
+.flight-lane{position:relative;min-width:0}
+.flying-tag{position:absolute;top:2px;left:0;display:flex;align-items:center;justify-content:center;gap:4px;min-width:85px;min-height:50px;padding:3px 10px 3px 4px;border:2px solid #e5c288;border-radius:11px 18px 13px 18px;background:#37264bf5;color:#fff3cc;font-size:clamp(19px,3vw,26px);font-weight:850;box-shadow:0 4px 10px #160d30a0;animation:fly-across-tower var(--duration) ease-in-out var(--offset) infinite alternate}
+.flight-lane:nth-child(even) .flying-tag{animation-direction:alternate-reverse}
+.flying-tag:disabled{opacity:1}
+.flying-tag:hover,.flying-tag:focus-visible{animation-play-state:paused;outline:2px solid #ffdb85;z-index:2}
+.flying-tag::before{content:"";position:absolute;left:-20px;top:10px;width:18px;height:19px;background:radial-gradient(circle at 77% 12%,#ffe389 0 1px,transparent 2px),radial-gradient(circle at 27% 53%,#dfb8ed 0 1px,transparent 2px),radial-gradient(circle at 65% 84%,#f8d897 0 2px,transparent 3px);pointer-events:none}
+.flying-tag .flying-object{flex:none;width:43px;height:40px;object-fit:contain;filter:drop-shadow(0 3px 4px #140d25)}
+.flying-tag>span{line-height:1.12}
+.flight-lane .flying-tag.caught{z-index:4;left:var(--caught-x,0);top:var(--caught-y,0);animation:fly-to-shelf .7s ease-in both;transform-origin:top left;border-color:#ffe397}
+.flight-status:empty{display:none}
+.object-shelf{display:flex;flex-wrap:wrap;gap:10px;align-items:end;min-height:53px;padding:7px 10px;margin:12px 0;border-bottom:5px solid #ce9959;border-radius:0 0 9px 9px;background:#371f3c95}
+.object-shelf .flying-object{width:42px;height:36px;object-fit:contain}
+.object-shelf .just-landed{animation:show-landed .17s .64s both}
+@keyframes fly-across-tower{0%{left:0;transform:translate(0,3px) rotate(-6deg)}28%{transform:translate(-28%,-5px) rotate(3deg)}67%{transform:translate(-67%,5px) rotate(-2deg)}100%{left:100%;transform:translate(-100%,0) rotate(6deg)}}
+@keyframes fly-to-shelf{0%{transform:none;opacity:1}26%{opacity:1}91%{transform:translate(var(--shelf-x,0),var(--shelf-y,65px)) scale(.45);opacity:.85}100%{transform:translate(var(--shelf-x,0),var(--shelf-y,65px)) scale(.4);opacity:0}}
+@keyframes show-landed{from{opacity:0;transform:translateY(-7px)}to{opacity:1;transform:none}}
+@media(max-width:480px){.flying-yard{min-height:300px;padding-inline:9px}.flying-tag .flying-object{width:34px;height:34px}.flying-tag{min-height:45px}}
+@media(prefers-reduced-motion:reduce){.flight-lane .flying-tag,.object-shelf .just-landed{animation:none}.flight-lane:nth-child(2n) .flying-tag{left:50%}.flight-lane .flying-tag.caught{visibility:hidden}}
 
 /* Spelling Forge workbench. */
 .forge-cards{display:flex;flex-wrap:wrap;gap:9px;margin:12px 0}
