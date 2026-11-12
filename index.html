@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en-US">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#252340">
+  <meta name="description" content="Six classroom phonics games for Giraffe Books 1–3.">
+  <title>Wordspell Academy · Giraffe Phonics</title>
+  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./quest.css">
+  <script type="module" src="./app.mjs"></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to games</a>
+  <header class="top">
+    <div class="shell top-inner">
+      <a class="brand" id="home" href="./">
+        <span class="seal" aria-hidden="true">✦</span>
+        <span><strong>Wordspell Academy</strong><small>GIRAFFE PHONICS</small></span>
+      </a>
+      <div class="top-actions">
+        <button type="button" class="quiet" id="teacher" aria-haspopup="dialog">Teacher guide</button>
+        <button type="button" class="quiet full" id="fullscreen" aria-label="Toggle full screen" title="Toggle full screen">⛶</button>
+      </div>
+    </div>
+  </header>
+  <main class="shell" id="main">
+    <div id="lobby">
+      <section class="intro" aria-labelledby="hero-title">
+        <div><h1 id="hero-title">The academy map</h1><p>Pick a book. Choose what to practice. Then pick a mission.</p></div>
+        <div class="rune-total" id="rune-total"></div>
+      </section>
+      <section class="academy" id="books" aria-label="Set up your quest">
+        <div class="quest-setup">
+          <div class="quest-control"><h2>Book</h2><div id="book-picker" class="book-picker" role="group" aria-label="Choose a book"></div></div>
+          <div class="quest-control"><h2>Difficulty</h2><div id="level-picker" class="level-picker" role="group" aria-label="Difficulty"></div></div>
+          <div class="quest-control quest-focus"><label for="focus">What do you want to practice?</label><select id="focus"></select></div>
+        </div>
+        <div class="quest-note"><span id="book-summary"></span><span id="level-hint"></span></div>
+        <section class="map" aria-label="Choose one of six missions">
+          <div class="map-illustration" aria-hidden="true"></div>
+          <div class="map-legend" aria-hidden="true">✦ &nbsp; W O R D S P E L L &nbsp; A C A D E M Y &nbsp; ✦</div>
+          <div id="game-picker" class="map-nodes"></div>
+        </section>
+      </section>
+    </div>
+    <section id="play" class="play" hidden aria-label="Current game"></section>
+  </main>
+  <footer class="shell footer"><strong>Wordspell Academy</strong><span>Giraffe Phonics · Books 1–3</span></footer>
+  <dialog id="guide">
+    <div class="dialog-head"><h2>Teacher guide</h2><button type="button" class="quiet" data-close-guide aria-label="Close teacher guide">×</button></div>
+    <ul>
+      <li><strong>Simple</strong> uses fewer choices and extra cues. <strong>Medium</strong> adds choices and tiles. <strong>Difficult</strong> uses closer choices and the full alphabet in Spelling Forge.</li>
+      <li><strong>Echo Tower</strong> is for hearing a target sound. <strong>Blend Bridge</strong> asks students to spin a real printed word, say the sounds, and blend it aloud. The teacher confirms the reading to add a plank.</li>
+      <li><strong>Sound Potions</strong> asks students to say each sound aloud and add one drop per sound. Check that the child says the sounds in order.</li>
+      <li><strong>Spelling Forge</strong> uses word audio. <strong>The Sorting Hall</strong> has students clear clouds and sort several words by sound or spelling. <strong>Sentence Quest</strong> asks students to find words that share a sound or spelling, then read the restored story.</li>
+      <li>For projection, have students say the word or explain the rule before selecting. Use <strong>Teacher word</strong> if you prefer to read an audio prompt yourself.</li>
+    </ul>
+    <p>Collect a room rune by getting at least two-thirds of a full round correct. You can play every room at any time.</p>
+    <div class="voice-settings">
+      <label for="voice-select">American English voice</label>
+      <select id="voice-select"></select>
+      <button class="quiet audio" type="button" id="voice-preview">Preview voice</button>
+      <p id="voice-note"></p>
+    </div>
+    <label class="classroom-font">Classroom font
+      <input id="classroom-font" type="file" accept=".ttf,.otf,.woff,.woff2">
+      <small>Letters for Learners uses the font installed on this device. You can also choose your own copy here.</small>
+      <small id="classroom-font-status" role="status"></small>
+    </label>
+    <p>In the sound labels, <u>th</u> is voiced and <u>oo</u> is long.</p>
+    <button class="primary" type="button" data-close-guide>Back to the academy</button>
+  </dialog>
+  <div class="sr-only" id="live" aria-live="polite"></div>
+</body>
+</html>
