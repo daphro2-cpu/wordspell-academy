@@ -60,21 +60,22 @@ function usVoices(){
   return (speech?.getVoices()??[]).filter(v=>/^en[-_]US$/i.test(v.lang))
     .sort((a,b)=>voicePriority(a)-voicePriority(b)||a.name.localeCompare(b.name));
 }
-function voiceChoice(){
+function voiceChoice(preferClips=false){
   if(voicePreference==='teacher'||voicePreference==='bundled')return voicePreference;
+  if(preferClips&&voicePreference==='auto')return 'bundled';
   const choices=usVoices();
   return choices.find(v=>v.voiceURI===voicePreference)??choices[0]??'bundled';
 }
 function voiceUi(){
   const available=usVoices();
   const select=by('voice-select');
-  const entries=[['auto','Best available US voice'],...available.map(v=>[v.voiceURI,v.name]),
+  const entries=[['auto','Original word clips (default)'],['device-auto','Best available browser voice'],...available.map(v=>[v.voiceURI,v.name]),
     ['bundled','Built-in American English audio'],['teacher','Teacher reads']];
   select.innerHTML=entries.map(([value,label])=>'<option value="'+esc(value)+'">'+esc(label)+'</option>').join('');
   select.value=entries.some(([value])=>value===voicePreference)?voicePreference:'auto';
-  const voice=voiceChoice();
+  const voice=voiceChoice(true);
   by('voice-note').textContent=voice==='teacher'?'Use Teacher word to read the prompt aloud.':
-    voice==='bundled'?'Using the built-in US word clips. Device voices appear here when your browser provides them.':
+    voice==='bundled'?'Using the saved American English word clips.':
     'Using '+voice.name+' (US). Preview it to check pacing and pronunciation.';
   by('voice-preview').disabled=voice==='teacher';
 }
@@ -106,7 +107,7 @@ function playBundled(word,request){
 function say(word,preview=false){
   stopSound();
   const request=soundRequest;
-  const voice=voiceChoice();
+  const voice=voiceChoice(true);
   if(voice==='teacher'){
     by('live').textContent='Teacher reads mode is on. Open Teacher word or Teacher recordings.';
     syncFlightMusic();
