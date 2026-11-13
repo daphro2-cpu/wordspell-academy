@@ -47,9 +47,13 @@ const speech='speechSynthesis' in window?window.speechSynthesis:null;
 const SpeechRecognition=window.SpeechRecognition??window.webkitSpeechRecognition;
 let recognition;
 let recognitionTimeout;
-const voiceStorage='wordspell-voice-v1';
+const voiceStorage='wordspell-voice-v2';
 let voicePreference='auto';
-try {voicePreference=localStorage.getItem(voiceStorage)||'auto';} catch {}
+try {
+  const saved=localStorage.getItem(voiceStorage);
+  const teacherReads=localStorage.getItem('wordspell-voice-v1')==='teacher';
+  voicePreference=saved??(teacherReads?'teacher':'auto');
+} catch {}
 let soundRequest=0;
 const voicePriority=voice=>{
   if(/online|neural|natural|premium|enhanced|google/i.test(voice.name))return 0;
@@ -60,22 +64,22 @@ function usVoices(){
   return (speech?.getVoices()??[]).filter(v=>/^en[-_]US$/i.test(v.lang))
     .sort((a,b)=>voicePriority(a)-voicePriority(b)||a.name.localeCompare(b.name));
 }
-function voiceChoice(preferClips=false){
-  if(voicePreference==='teacher'||voicePreference==='bundled')return voicePreference;
-  if(preferClips&&voicePreference==='auto')return 'bundled';
+function voiceChoice(){
+  if(voicePreference==='teacher')return 'teacher';
+  if(voicePreference==='auto')return 'bundled';
   const choices=usVoices();
   return choices.find(v=>v.voiceURI===voicePreference)??choices[0]??'bundled';
 }
 function voiceUi(){
   const available=usVoices();
   const select=by('voice-select');
-  const entries=[['auto','Original word clips (default)'],['device-auto','Best available browser voice'],...available.map(v=>[v.voiceURI,v.name]),
-    ['bundled','Built-in American English audio'],['teacher','Teacher reads']];
+  const entries=[['auto','Ana · American English child voice'],['device-auto','Best available browser voice'],...available.map(v=>[v.voiceURI,v.name]),
+    ['teacher','Teacher reads']];
   select.innerHTML=entries.map(([value,label])=>'<option value="'+esc(value)+'">'+esc(label)+'</option>').join('');
   select.value=entries.some(([value])=>value===voicePreference)?voicePreference:'auto';
-  const voice=voiceChoice(true);
+  const voice=voiceChoice();
   by('voice-note').textContent=voice==='teacher'?'Use Teacher word to read the prompt aloud.':
-    voice==='bundled'?'Using the saved American English word clips.':
+    voice==='bundled'?'Using saved clips of Ana, an American English child voice.':
     'Using '+voice.name+' (US). Preview it to check pacing and pronunciation.';
   by('voice-preview').disabled=voice==='teacher';
 }
@@ -95,7 +99,7 @@ function stopSound(){
 }
 function playBundled(word,request){
   if (request!==soundRequest)return;
-  audio.src=new URL('./audio/'+encodeURIComponent(word.toLowerCase())+'.mp3',import.meta.url).href;
+  audio.src=new URL('./audio/ana/'+encodeURIComponent(word.toLowerCase())+'.mp3',import.meta.url).href;
   audio.onended=()=>finishAudioPrompt(request);
   const unavailable=()=>{
     if(request===soundRequest)by('live').textContent='Audio is unavailable. Open Teacher word to read the prompt.';
@@ -107,7 +111,7 @@ function playBundled(word,request){
 function say(word,preview=false){
   stopSound();
   const request=soundRequest;
-  const voice=voiceChoice(true);
+  const voice=voiceChoice();
   if(voice==='teacher'){
     by('live').textContent='Teacher reads mode is on. Open Teacher word or Teacher recordings.';
     syncFlightMusic();
