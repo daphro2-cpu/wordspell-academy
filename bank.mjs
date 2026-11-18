@@ -69,6 +69,7 @@ lids|l i d s|ds|Put the ___ back on the jars.`,
   },
   2: {
     finals:`puff|p u ff|ff|Blow a ___ of air.
+huff|h u ff|ff|The big bad wolf began to ___ and puff.
 cliff|c l i ff|ff|The rocky ___ rises above the sea.
 miss|m i ss|ss|If you do not aim, you may ___ the goal.
 kiss|k i ss|ss|She gave the baby a ___ on the cheek.
@@ -86,6 +87,7 @@ sock|s o ck|ck|Put a ___ on each foot.
 catch|c a tch|tch|Hold out your hands to ___ the ball.
 match|m a tch|tch|These socks are the same color, so they ___.
 fetch|f e tch|tch|The dog will ___ the stick.
+hutch|h u tch|tch|The rabbit sleeps in its ___.
 badge|b a dge|dge|The officer wore a shiny ___.
 edge|e dge|dge|Keep away from the ___ of the table.
 bridge|b r i dge|dge|A ___ crosses the river.`,
