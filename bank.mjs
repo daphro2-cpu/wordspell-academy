@@ -70,11 +70,20 @@ lids|l i d s|ds|Put the ___ back on the jars.`,
   2: {
     finals:`puff|p u ff|ff|Blow a ___ of air.
 huff|h u ff|ff|The big bad wolf began to ___ and puff.
+gaff|g a ff|ff|A ___ is a long hook used to lift a fish.
+doff|d o ff|ff|To ___ a hat means to take it off.
+tiff|t i ff|ff|The friends had a little ___ over a toy.
 cliff|c l i ff|ff|The rocky ___ rises above the sea.
 miss|m i ss|ss|If you do not aim, you may ___ the goal.
 kiss|k i ss|ss|She gave the baby a ___ on the cheek.
+pass|p a ss|ss|Please ___ me the ball.
+chess|ch e ss|ss|We play ___ with kings and queens.
+boss|b o ss|ss|The ___ is in charge of the shop.
+muss|m u ss|ss|The wind will ___ my hair.
 hill|h i ll|ll|We walked up the ___.
 bell|b e ll|ll|The ___ rang at the end of class.
+fill|f i ll|ll|Please ___ my cup with water.
+gull|g u ll|ll|A ___ flew over the sand.
 ball|b a ll|all|Kick the ___ into the goal.
 wall|w a ll|all|Hang the picture on the ___.
 tall|t a ll|all|A giraffe is very ___.
@@ -83,13 +92,23 @@ toll|t o ll|oll-long|We paid a ___ to cross the bridge.
 doll|d o ll|oll-short|She put a little dress on her ___.
 back|b a ck|ck|My backpack is on my ___.
 duck|d u ck|ck|A ___ swam across the pond.
+black|b l a ck|ck|She wore a ___ hat.
+neck|n e ck|ck|I wore a scarf around my ___.
+sick|s i ck|ck|I stayed home because I was ___.
+rock|r o ck|ck|I found a smooth ___ by the river.
 sock|s o ck|ck|Put a ___ on each foot.
 catch|c a tch|tch|Hold out your hands to ___ the ball.
 match|m a tch|tch|These socks are the same color, so they ___.
 fetch|f e tch|tch|The dog will ___ the stick.
-hutch|h u tch|tch|The rabbit sleeps in its ___.
+hutch|h u tch|tch|The cups are in the dining room ___.
+etch|e tch|tch|We can ___ a design into the glass.
+witch|w i tch|tch|The ___ flew on a broom.
+blotch|b l o tch|tch|A big red ___ of paint stained my shirt.
 badge|b a dge|dge|The officer wore a shiny ___.
 edge|e dge|dge|Keep away from the ___ of the table.
+ridge|r i dge|dge|We walked along the ___ of the hill.
+lodge|l o dge|dge|We stayed at a ski ___.
+fudge|f u dge|dge|We shared a square of chocolate ___.
 bridge|b r i dge|dge|A ___ crosses the river.`,
     magic:`cake|c a_e k|a_e|A birthday ___ has candles.
 tape|t a_e p|a_e|Use ___ to stick the paper to the wall.

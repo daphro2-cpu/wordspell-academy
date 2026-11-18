@@ -1,8 +1,8 @@
-import {catalog} from './bank.mjs?v=book2-endings';
-import {modes,levels,createRound,sortingBoard,practiceContrasts,shuffle,choiceLabel,isVowelTile} from './engine.mjs?v=book2-endings';
+import {catalog} from './bank.mjs?v=book2-textbook';
+import {modes,levels,createRound,sortingBoard,practiceContrasts,shuffle,choiceLabel,isVowelTile} from './engine.mjs?v=book2-textbook';
 
 import {missions,flightMission} from './missions.mjs?v=listen-sort';
-import {makeStory} from './story.mjs?v=book2-endings';
+import {makeStory} from './story.mjs?v=book2-textbook';
 import {reviewPicture} from './review.mjs?v=flight-pictures';
 
 const by=id=>document.getElementById(id);
