@@ -12,6 +12,9 @@ const flightMusic=by('flight-music');
 const flightEffect=new Audio();
 flightEffect.volume=.42;
 const flightTime={simple:22,medium:19,difficult:16};
+const sortTime={simple:12,medium:10,difficult:8};
+const flightWarningAt=5000;
+let sortClock;
 let flightClock;
 let flightTransition;
 let promptWatchdog;
@@ -36,6 +39,11 @@ function finishAudioPrompt(request){
   if(request!==soundRequest)return;
   clearTimeout(promptWatchdog);
   promptPlaying=false;
+  if(active?.sortPhase==='listening'){
+    active.sortPhase='pick';
+    updateSortCue();
+    startSortClock();
+  }
   syncFlightMusic();
 }
 const defaultFocus={1:'vowels',2:'magic',3:'two'};
@@ -100,6 +108,10 @@ function stopSound(){
   promptPlaying=false;
   audio.pause();
   speech?.cancel();
+  if(active?.sortPhase==='listening'){
+    active.sortPhase='ready';
+    updateSortCue();
+  }
 }
 function playBundled(word,request,rate=1){
   if (request!==soundRequest)return;
@@ -113,17 +125,21 @@ function playBundled(word,request,rate=1){
   audio.onerror=unavailable;
   audio.play().catch(unavailable);
 }
-function say(word,preview=false){
+function say(word,preview=false,sortPrompt=false){
   stopSound();
   const request=soundRequest;
+  if(sortPrompt){
+    active.sortPhase='listening';
+    updateSortCue();
+  }
   const voice=voiceChoice();
   if(voice==='teacher'){
     by('live').textContent='Teacher reads mode is on. Open Teacher word or Teacher recordings.';
-    syncFlightMusic();
+    finishAudioPrompt(request);
     return;
   }
   promptPlaying=true;
-  if(active?.settings.variant==='flight')promptWatchdog=setTimeout(()=>finishAudioPrompt(request),6000);
+  if(sortPrompt||active?.settings.variant==='flight')promptWatchdog=setTimeout(()=>finishAudioPrompt(request),6000);
   syncFlightMusic();
   if(voice==='bundled'){playBundled(word,request);return;}
   const message=preview?'Listen carefully. Can you find the word that completes the spell?':word;
@@ -197,6 +213,7 @@ function selectionUi(){
 selectionUi();
 
 function start(settings) {
+  stopSortClock();
   stopFlightRun();
   stopListening();
   stopSound();
@@ -204,7 +221,7 @@ function start(settings) {
   const questions=board?.cards??(settings.mode==='context'
     ? makeStory(settings).map(page=>({...page,options:shuffle([...page.targets,...page.decoys])}))
     : createRound({...settings,mode:settings.variant==='flight'?'flight':settings.mode}));
-  active={settings,questions,index:0,board,sortStarted:false,boardMessage:'',drops:[],hatched:false,mistakes:[],score:0,verdict:null,selected:null,spin:false,micMessage:'',micReady:false,micUnavailable:!canUseMic,spelling:'',forgeStart:0,forgeIndex:0,forgeSolved:new Set(),forgeDrafts:new Map(),forgeStriking:false,forgeMessage:'',revealed:new Set(),found:new Set(),storyMessage:'',teacherOpen:false,outcomes:[],earned:false,flightStarted:performance.now(),flightPhase:'ready',flightRemaining:flightTime[settings.level]*1000};
+  active={settings,questions,index:0,board,sortPhase:'ready',sortRemaining:sortTime[settings.level]*1000,sortStars:0,boardMessage:'',drops:[],hatched:false,mistakes:[],score:0,verdict:null,selected:null,spin:false,micMessage:'',micReady:false,micUnavailable:!canUseMic,spelling:'',forgeStart:0,forgeIndex:0,forgeSolved:new Set(),forgeDrafts:new Map(),forgeStriking:false,forgeMessage:'',forgeHint:null,forgeAttempts:new Map(),revealed:new Set(),found:new Set(),storyMessage:'',teacherOpen:false,outcomes:[],earned:false,flightStarted:performance.now(),flightPhase:'ready',flightRemaining:flightTime[settings.level]*1000};
   lobby.hidden=true;
   play.hidden=false;
   history.replaceState(null,'','#play');
@@ -214,6 +231,7 @@ function start(settings) {
   play.querySelector('h1').focus({preventScroll:true});
 }
 function returnToLobby(){
+  stopSortClock();
   stopFlightRun();
   stopListening();
   stopSound();
@@ -277,48 +295,91 @@ function render() {
   play.querySelector('.potion-demo')?.addEventListener('toggle',e=>{if(active)active.demoOpen=e.target.open;});
 }
 function sortView(mission) {
-  const {questions,board,score,sortStarted}=active;
+  const {questions,board,score,sortPhase}=active;
+  const canPick=sortPhase==='pick';
   const next=questions[score];
   const placed=questions.slice(0,score);
   return `<article class="stage mission scene-sort"><header class="mission-header"><div><h1 tabindex="-1">The Sorting Hall</h1><p class="mission-objective">Listen and bring the words home.</p></div><span class="mission-count">${score} of ${questions.length} words sorted</span></header>
     <div class="scene-grid"><div class="task">
     <h2>${next?'Hear the word. Tap its box.':'Yay! All the words are home.'}</h2>
     ${next?`<p class="prompt">${esc(board.prompt)} The word will appear when you tap the right box.</p>
-      <div class="sort-listen"><span aria-hidden="true">☁</span><button class="quiet audio" type="button" data-action="hearSort">◖)) ${sortStarted?'Hear it again':'Hear the word'}</button></div>
-      <details class="teacher-word"><summary>Teacher word</summary><p>${esc(next.entry.word)}</p></details>`:''}
-    <div class="word-portals" role="group" aria-label="Sound groups">${board.categories.map((key,index)=>{
+      <div class="sort-listen"><span aria-hidden="true">☁</span><button class="quiet audio" type="button" data-action="hearSort">◖)) ${sortPhase==='ready'?'Hear the word':'Hear it again'}</button></div>
+      <details class="teacher-word"><summary>Teacher word</summary><p>${esc(next.entry.word)}</p></details>
+      <div class="sort-challenge"><button type="button" class="quiet" data-action="toggleSortChallenge" aria-pressed="${Boolean(active.settings.sortTimed)}">Timer ${active.settings.sortTimed?'on':'off'}</button>
+      ${active.settings.sortTimed?`<span id="sort-clock" role="timer">${sortClockText()}</span><span>★ ${active.sortStars}</span>`:''}</div>`:''}
+    ${next?`<p class="sort-cue" role="status" data-phase="${sortPhase}">${sortCueText[sortPhase]}</p>`:''}
+    <div class="word-portals" role="group" aria-label="Sound boxes">${board.categories.map((key,index)=>{
       const words=placed.filter(card=>card.correct===key);
-      return `<button class="word-portal" type="button" data-portal="${index}" ${next&&sortStarted?'':'disabled'}><span class="portal-label">${shown(key)}</span><span class="portal-words">${words.map(card=>'<span class="'+(card===placed.at(-1)?'just-sorted':'')+'">'+esc(card.entry.word)+'</span>').join('')}</span></button>`;
+      return `<button class="word-portal" type="button" data-portal="${index}" ${next&&canPick?'':'disabled'}><span class="portal-label">${shown(key)}</span><span class="portal-words">${words.map(card=>'<span class="'+(card===placed.at(-1)?'just-sorted':'')+'">'+esc(card.entry.word)+'</span>').join('')}</span></button>`;
     }).join('')}</div>
     <p class="story-status" role="status">${esc(active.boardMessage)}</p>
     ${next?'':'<button class="primary" type="button" data-action="finishSort">Let’s read! →</button>'}
     </div>${guideView(mission,null)}</div></article>`;
 }
+const sortCueText={
+  ready:'Tap “Hear the word” to start.',
+  listening:'Listen…',
+  pick:'↓ Tap a box! ↓',
+};
+function updateSortCue(){
+  const cue=play.querySelector('.sort-cue');
+  if(!cue)return;
+  const phase=active.sortPhase;
+  cue.dataset.phase=phase;
+  cue.textContent=sortCueText[phase];
+  play.querySelector('[data-action=hearSort]').textContent=phase==='ready'?'◖)) Hear the word':'◖)) Hear it again';
+  play.querySelectorAll('[data-portal]').forEach(box=>{box.disabled=phase!=='pick';});
+}
+function sortClockText(){
+  return active.sortRemaining>0?Math.ceil(active.sortRemaining/1000)+' s for a bonus star':'Time’s up. Keep sorting!';
+}
+function stopSortClock(){
+  clearInterval(sortClock);
+}
+function startSortClock(){
+  stopSortClock();
+  if(!active.settings.sortTimed||active.sortPhase!=='pick'||active.sortRemaining<=0||document.hidden)return;
+  const round=active;
+  let last=performance.now();
+  sortClock=setInterval(()=>{
+    const now=performance.now();
+    if(active!==round||round.sortPhase!=='pick'){stopSortClock();return;}
+    if(!guide.open&&!play.querySelector('.scene-sort .teacher-word[open]')){
+      round.sortRemaining=Math.max(0,round.sortRemaining-(now-last));
+      const clock=by('sort-clock');
+      if(clock&&clock.textContent!==sortClockText())clock.textContent=sortClockText();
+      if(!round.sortRemaining)stopSortClock();
+    }
+    last=now;
+  },100);
+}
 function hearSort(){
   const next=active.questions[active.score];
-  if(!next)return;
-  if(!active.sortStarted){
-    active.sortStarted=true;
-    render();
-    focusOption('[data-action=hearSort]');
+  if(next){
+    stopSortClock();
+    say(next.entry.word,false,true);
   }
-  say(next.entry.word);
 }
 function sortWord(portal) {
   const next=active.questions[active.score];
-  if(!active.sortStarted||!next)return;
+  if(active.sortPhase!=='pick'||!next)return;
   if(next.correct!==active.board.categories[portal]){
     active.boardMessage='Try another box. You can hear the word again.';
     play.querySelector('.story-status').textContent=active.boardMessage;
     return;
   }
+  stopSortClock();
+  const bonus=active.settings.sortTimed&&active.sortRemaining>0;
+  if(bonus)active.sortStars++;
   active.score++;
-  active.boardMessage='That word is home!';
+  active.sortPhase='ready';
+  active.sortRemaining=sortTime[active.settings.level]*1000;
+  active.boardMessage=bonus?'That word is home! ★ Bonus star!':'That word is home!';
   const following=active.questions[active.score];
   render();
   if(following){
-    say(following.entry.word);
-    focusOption('[data-portal="'+portal+'"]');
+    hearSort();
+    focusOption('[data-action=hearSort]');
   } else focusOption('[data-action=finishSort]');
 }
 function flightPicture(word){
@@ -329,6 +390,20 @@ function flightPicture(word){
 }
 const flightSpeeds=[6.8,8.1,7.2,8.8,7.6];
 const flightPhases=[0.8,5.2,2.8,6.1,1.7];
+function flightFade(remaining){
+  return .28+.72*Math.min(1,remaining/flightWarningAt);
+}
+function updateFlightClock(){
+  const remaining=active.flightRemaining;
+  const clock=by('flight-clock');
+  if(clock)clock.value=remaining;
+  const seconds=by('flight-seconds');
+  if(seconds)seconds.textContent=Math.ceil(remaining/1000)+' s';
+  play.querySelector('.flying-yard')?.style.setProperty('--flight-opacity',flightFade(remaining));
+  const warning=by('flight-warning');
+  const message=remaining<=flightWarningAt?'Almost gone!':'';
+  if(warning&&warning.textContent!==message)warning.textContent=message;
+}
 function flightView(q){
   const {flightPhase,flightStarted,flightPausedAt}=active;
   const waiting=flightPhase==='ready';
@@ -342,8 +417,8 @@ function flightView(q){
   const ready=waiting?'<p>Listen for five words, one at a time. Catch each one before it flies away.</p>':'';
   const remaining=Math.max(0,Math.ceil(active.flightRemaining/1000));
   return `<div class="flight-toolbar">${controls}<button type="button" class="quiet flight-picture-toggle" data-action="toggleFlightPictures" aria-pressed="${flightPicturesEnabled}" aria-label="Picture clues">Picture clues ${flightPicturesEnabled?'on':'off'}</button><button type="button" class="quiet flight-music-toggle" data-action="toggleMusic" aria-pressed="${musicEnabled}" aria-label="Background music">♫ Music ${musicEnabled?'on':'off'}</button></div>
-    ${ready}<div class="flight-time">${waiting?'':'<label for="flight-clock">Time left</label><progress id="flight-clock" value="'+active.flightRemaining+'" max="'+(flightTime[active.settings.level]*1000)+'"></progress><span id="flight-seconds">'+remaining+' s</span>'}</div>
-    <div class="flying-yard ${waiting||paused?'flight-paused':''} ${flightPhase==='missed'?'flight-escaping':''}" role="group" aria-label="Flying words">${q.options.map((word,i)=>{
+    ${ready}<div class="flight-time">${waiting?'':'<label for="flight-clock">Time left</label><progress id="flight-clock" value="'+active.flightRemaining+'" max="'+(flightTime[active.settings.level]*1000)+'"></progress><span id="flight-seconds">'+remaining+' s</span><strong id="flight-warning" role="status">'+(flying&&active.flightRemaining<=flightWarningAt?'Almost gone!':'')+'</strong>'}</div>
+    <div class="flying-yard ${waiting||paused?'flight-paused':''} ${flightPhase==='missed'?'flight-escaping':''}" style="--flight-opacity:${flightFade(active.flightRemaining)}" role="group" aria-label="Flying words">${q.options.map((word,i)=>{
       const caught=flightPhase==='caught'&&word===q.correct;
       const timing='--duration:'+flightSpeeds[i]+'s;--offset:'+(-(flightPhases[i]+elapsed))+'s';
       return '<div class="flight-lane" style="'+timing+'"><button type="button" class="flying-tag'+(caught?' caught':'')+'" data-choice="'+i+'" '+(flying?'':'disabled')+'>'+(flightPicturesEnabled?flightPicture(word):'')+'<span>'+esc(word)+'</span></button></div>';
@@ -376,10 +451,7 @@ function startFlight(){
     const now=performance.now();
     if(active===session&&active.flightPhase==='live'&&!promptPlaying&&!document.hidden&&!(voicePreference==='teacher'&&active.teacherOpen)){
       active.flightRemaining=Math.max(0,active.flightRemaining-(now-last));
-      const clock=by('flight-clock');
-      if(clock)clock.value=active.flightRemaining;
-      const seconds=by('flight-seconds');
-      if(seconds)seconds.textContent=Math.ceil(active.flightRemaining/1000)+' s';
+      updateFlightClock();
       if(active.flightRemaining===0)missFlyingWord();
     }
     last=now;
@@ -758,19 +830,48 @@ function selectForgeCard(index){
   active.forgeIndex=index;
   active.spelling=active.forgeDrafts.get(index)??'';
   active.forgeMessage='';
+  active.forgeHint=null;
   render();
   play.querySelector('[data-forge-card="'+index+'"]')?.focus({preventScroll:true});
+}
+function spellingHint(draft,target,attempt){
+  let start=0;
+  while(start<draft.length&&draft[start]===target[start])start++;
+  let end=draft.length;
+  let targetEnd=target.length;
+  while(end>start&&targetEnd>start&&draft[end-1]===target[targetEnd-1]){
+    end--;
+    targetEnd--;
+  }
+  const missing=target.slice(start,targetEnd);
+  const doubled=start===end&&missing.length===1&&(draft[start-1]===missing||draft[start]===missing);
+  let message='Say the word slowly. Check the marked letters.';
+  if(doubled){
+    message=attempt>1?`Use two ${missing} letters together here.`:'A letter needs to be doubled at the marked spot.';
+  } else if(!missing){
+    message=end-start===1?'Take out the extra letter.':'Take out the extra letters.';
+  } else if(start===end){
+    message=missing.length===1?'One letter is missing here.':'Letters are missing here.';
+  }
+  if(attempt>1&&missing&&!doubled){
+    message=`Try “${missing[0]}” at the marked spot.`;
+  }
+  return {start,end,message};
 }
 function checkForgeWord(){
   if(!active.spelling||active.forgeStriking||active.forgeSolved.has(active.forgeIndex))return;
   const q=question();
   if(active.spelling!==q.correct){
-    active.forgeMessage='Try again. Hear the word one more time.';
+    const attempt=(active.forgeAttempts.get(active.forgeIndex)??0)+1;
+    active.forgeAttempts.set(active.forgeIndex,attempt);
+    active.forgeHint=spellingHint(active.spelling,q.correct,attempt);
+    active.forgeMessage='';
     render();
-    focusOption('[data-action=erase]');
+    play.querySelector('.forge-hint')?.focus({preventScroll:true});
     return;
   }
   active.forgeDrafts.delete(active.forgeIndex);
+  active.forgeHint=null;
   active.forgeSolved.add(active.forgeIndex);
   active.outcomes[active.forgeIndex]=true;
   active.score++;
@@ -801,10 +902,19 @@ function strikeAnvil(){
 }
 function spellingForge(q){
   let position=0;
+  const hint=active.forgeHint;
+  const slot=(letter,index)=>{
+    const marked=hint&&index>=hint.start&&index<hint.end;
+    return '<span class="letter-slot'+(marked?' needs-fix':'')+'">'+esc(letter??'')+'</span>';
+  };
   const word=q.mask
-    ? [...q.mask].map(letter=>letter==='_'?'<span class="letter-slot">'+esc(active.spelling[position++]??'')+'</span>':esc(letter)).join('')
-    : [...active.spelling].map(letter=>'<span class="letter-slot">'+esc(letter)+'</span>').join('');
+    ? [...q.mask].map(letter=>letter==='_'?slot(active.spelling[position],position++):esc(letter)).join('')
+    : Array.from({length:active.spelling.length+1},(_,index)=>{
+      const gap=hint&&hint.start===hint.end&&index===hint.start?'<span class="letter-slot needs-fix missing-letter" aria-label="Missing letters"></span>':'';
+      return gap+(index<active.spelling.length?slot(active.spelling[index],index):'');
+    }).join('');
   return `<div class="forge-word" aria-label="Word so far: ${esc(active.spelling||'empty')}">${word||'&nbsp;'}</div>
+    ${hint?`<div class="forge-hint" role="status" tabindex="-1"><span>${esc(hint.message)}</span>${audioButton(q.entry.word,'Hear the word again')}</div>`:''}
     <div class="letter-bank" role="group" aria-label="Letters">${q.letters.map(letter=>'<button class="tile" type="button" data-letter="'+letter+'">'+letter+'</button>').join('')}</div>
     <div class="play-actions"><button class="primary" type="button" data-action="forge" ${active.spelling&&(q.mask?active.spelling.length===q.correct.length:true)?'':'disabled'}>Check</button>
     <button class="quiet" type="button" data-action="erase" ${active.spelling?'':'disabled'}>Take back</button></div>`;
@@ -813,6 +923,7 @@ function addLetter(letter){
   const q=question();
   if(active.verdict!==null||active.forgeStriking||active.forgeSolved.has(active.forgeIndex)||active.spelling.length>=(q.mask?q.correct.length:16))return;
   active.spelling+=letter;
+  active.forgeHint=null;
   render();
   play.querySelector('[data-letter="'+letter+'"]')?.focus({preventScroll:true});
 }
@@ -838,7 +949,7 @@ function result(m){
     ? '<div class="dragon-hatch" role="img" aria-label="A baby dragon hatched"></div><p class="potion-reveal" tabindex="-1" id="hatch-result">You hatched a baby dragon!</p>'
     : cauldron()+(active.hatched==='hatching'?'<p class="potion-reveal" role="status">Look! The egg is moving…</p>':'<button class="primary" type="button" data-action="hatch">Pour the potion on the egg</button>')):
     active.settings.variant==='flight'&&allCorrect?'<p class="potion-reveal">Everything is back in its place!</p>':
-    m.id==='sort'?'<p class="potion-reveal">The clouds are gone. All the words are home!</p>':
+    m.id==='sort'?'<p class="potion-reveal">The clouds are gone. All the words are home!</p>'+(active.sortStars?'<p>★ '+active.sortStars+' bonus '+(active.sortStars===1?'star':'stars')+'</p>':''):
     m.id==='spell'?swordView()+'<p class="potion-reveal">The magic sword is ready!</p>':
     m.id==='blend'&&allCorrect?bridgeProgress(active.questions.length)+'<p class="potion-reveal">Finn made it across the bridge!</p>':
     m.id==='listen'&&!active.settings.variant&&active.earned?'<div class="bell-reveal" aria-hidden="true">✦</div><p>Orla can ring her bell again!</p>':'';
@@ -936,8 +1047,16 @@ const actions={
     },1150);
   },
   hearSort,
+  toggleSortChallenge:()=>{
+    active.settings.sortTimed=!active.settings.sortTimed;
+    if(active.settings.sortTimed)active.sortRemaining=sortTime[active.settings.level]*1000;
+    render();
+    startSortClock();
+    focusOption('[data-action=toggleSortChallenge]');
+  },
   finishSort:()=>{
     if(active.score!==active.questions.length)return;
+    stopSortClock();
     stopSound();
     active.index=active.questions.length;
     awardRune();
@@ -1012,6 +1131,7 @@ const actions={
   strikeAnvil,
   erase:()=>{
     active.spelling=active.spelling.slice(0,-1);
+    active.forgeHint=null;
     render();
     focusOption('[data-action=erase]');
   },
@@ -1124,6 +1244,7 @@ by('voice-select').addEventListener('change',e=>{
 by('voice-preview').addEventListener('click',()=>say('spring',true));
 speech?.addEventListener('voiceschanged',voiceUi);
 document.addEventListener('visibilitychange',()=>{
+  if(active?.settings.mode==='sort')startSortClock();
   if(document.hidden&&mic)actions.cancelMic();
   if(document.hidden&&active?.settings.variant==='flight'&&active.flightPhase==='live')pauseFlight();
   else syncFlightMusic();
