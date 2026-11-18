@@ -7,8 +7,8 @@
   <meta name="description" content="Six classroom phonics games for Giraffe Books 1–3.">
   <title>Wordspell Academy · Giraffe Phonics</title>
   <link rel="stylesheet" href="./styles.css">
-  <link rel="stylesheet" href="./quest.css?v=mission-order">
-  <script type="module" src="./app.mjs?v=book2-textbook"></script>
+  <link rel="stylesheet" href="./quest.css?v=journey-map">
+  <script type="module" src="./app.mjs?v=journey-map"></script>
 </head>
 <body>
   <a class="skip" href="#main">Skip to games</a>
@@ -39,6 +39,10 @@
         <div class="quest-note"><span id="book-summary"></span><span id="level-hint"></span></div>
         <section class="map" aria-label="Choose one of six missions">
           <div class="map-illustration" aria-hidden="true"></div>
+          <svg class="map-route" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true">
+            <path class="route-desktop" d="M180 260 C240 305 283 465 338 526 S411 620 510 660 C555 610 614 463 601 385 S566 265 510 230 C610 210 698 310 830 270 C930 320 884 416 810 447 S735 587 731 675 S687 831 615 847 C480 885 365 844 271 805 S190 720 180 690 C143 791 166 917 305 929 S517 938 652 927 S851 851 830 690"/>
+            <path class="route-mobile" d="M250 130 C420 130 585 248 750 260 S425 394 250 400 S575 532 750 540 S427 674 250 680 S595 812 750 820"/>
+          </svg>
           <div class="map-legend" aria-hidden="true">✦ &nbsp; W O R D S P E L L &nbsp; A C A D E M Y &nbsp; ✦</div>
           <div id="game-picker" class="map-nodes"></div>
         </section>

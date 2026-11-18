@@ -19,19 +19,22 @@ body::before{opacity:.22}
 .book-picker button[aria-pressed=true],.level-picker button[aria-pressed=true]{background:#ffd98a;color:#241a30;border-color:#ffd98a;box-shadow:0 2px 0 #a67c40}
 .quest-focus select{width:100%;font-weight:600}
 .quest-note{display:flex;justify-content:space-between;gap:12px;font-size:12px;color:#e2d2df;margin:7px 2px 9px}
-.map{position:relative;isolation:isolate;overflow:hidden;border:2px solid #a77e4f;border-radius:25px 25px 15px 15px;background:#2c2543;box-shadow:0 14px 35px #110e20b3;padding:clamp(12px,2vw,26px)}
-.map-illustration{position:absolute;inset:0;background:linear-gradient(#211931bf,#171226e8),url("./assets/campus.webp") center / cover no-repeat;z-index:-2}
-.map-legend{text-align:center;font-weight:800;color:#ffe8aa;font-size:10px;letter-spacing:.08em;text-shadow:0 2px 5px #181020;margin:0 0 13px}
-.map-nodes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(8px,1.5vw,18px)}
-.map-node{--flag:#4e665b;position:relative;isolation:isolate;display:flex;flex-direction:column;justify-content:flex-end;align-items:flex-start;gap:3px;text-align:left;min-width:0;min-height:clamp(155px,16vw,220px);padding:11px;overflow:hidden;border:1px solid #d0a46e;border-radius:16px 16px 9px 9px;color:#fff6db;background:#251b34;transition:filter .18s}
-.map-node::before{content:"";position:absolute;z-index:-1;inset:0;background-image:linear-gradient(0deg,#160e26 2%,#181025df 18%,transparent 56%),url("./assets/campus.webp");background-size:100% 100%,300% 200%;background-position:center,var(--landmark-x) var(--landmark-y);background-repeat:no-repeat}
-.map-node:hover{filter:brightness(1.17)}
-.map-node:focus-visible{outline:3px solid #ffe3a0;outline-offset:2px}
-.map-node .map-sigil{position:absolute;top:10px;left:10px;display:grid;place-items:center;width:40px;height:40px;font-size:19px;font-weight:800;background:var(--flag);border:2px solid #ffe3a0;border-radius:50%;color:#fff7d9;box-shadow:0 0 0 3px #241b38a0,0 0 16px #ffd88f7e}
-.map-node strong{font:700 clamp(15px,2vw,23px)/1.1 var(--heading);text-shadow:0 1px 3px #000}
-.map-node .map-skill{font-weight:700;font-size:clamp(11px,1.2vw,14px);color:#ffe2ad}
+.map{position:relative;isolation:isolate;min-height:440px;aspect-ratio:2;overflow:hidden;border:2px solid #a77e4f;border-radius:25px 25px 15px 15px;background:#2c3652;box-shadow:0 14px 35px #110e20b3}
+.map-illustration{position:absolute;inset:0;background:linear-gradient(0deg,#120e2966,transparent 21%,transparent 78%,#100d2273),url("./assets/campus.webp") center / 100% 100% no-repeat;z-index:-3}
+.map::after{content:"";position:absolute;inset:9px;border:1px solid #ffd78c64;border-radius:16px 16px 8px 8px;pointer-events:none;z-index:-1}
+.map-route{position:absolute;inset:0;width:100%;height:100%;z-index:-2;pointer-events:none;filter:drop-shadow(0 1px 2px #291834)}
+.map-route path{fill:none;stroke:#ffdfa0;stroke-width:3px;stroke-linecap:round;stroke-dasharray:3 7;vector-effect:non-scaling-stroke}
+.route-mobile{display:none}
+.map-legend{position:absolute;top:13px;left:50%;transform:translateX(-50%);font-weight:800;color:#ffe8aa;font-size:10px;text-align:center;white-space:nowrap;text-shadow:0 2px 5px #181020}
+.map-nodes{position:absolute;inset:0}
+.map-node{--flag:#4e665b;position:absolute;left:var(--map-x);top:var(--map-y);transform:translate(-50%,-21px);display:grid;justify-items:center;gap:4px;min-width:0;padding:0;border:0;background:none;color:#fff6db;transition:filter .18s}
+.map-node:hover,.map-node:focus-visible{filter:brightness(1.23);z-index:1}
+.map-node:focus-visible{outline:3px solid #ffe3a0;outline-offset:4px;border-radius:7px}
+.map-node .map-sigil{display:grid;place-items:center;width:42px;height:42px;font-size:20px;font-weight:800;background:var(--flag);border:2px solid #ffe3a0;border-radius:50%;color:#fff7d9;box-shadow:0 0 0 3px #241b38a0,0 0 15px #ffd88f7e}
+.map-node strong{display:block;font:700 clamp(15px,2vw,23px)/1.1 var(--heading);white-space:nowrap;padding:5px 9px;background:#251b34f2;border:1px solid #e2b66b;border-radius:4px 10px 4px 10px;text-shadow:0 1px 2px #000}
+.map-node .map-skill{font-weight:700;font-size:11px;color:#fff3d4;padding:2px 6px;background:#231a31f2;border-radius:5px}
 .map-node.earned .map-sigil{background:#d39533;color:#271638;box-shadow:0 0 0 3px #ffe8a557,0 0 16px #ffdb66}
-.map-node .collected{position:absolute;top:9px;left:51px;font-size:19px;color:#ffe18e;text-shadow:0 1px 3px #3a1726}
+.map-node .collected{position:absolute;left:calc(50% + 20px);top:-6px;font-size:17px;color:#ffe18e;text-shadow:0 1px 3px #3a1726}
 .map-node.mint{--flag:#315c59}.map-node.peach{--flag:#654148}.map-node.lilac{--flag:#473d78}.map-node.gold{--flag:#815522}.map-node.rose{--flag:#784263}.map-node.blue{--flag:#354d7f}
 .play{max-width:none;margin:13px auto 0;min-height:76vh}
 .game-nav{margin:0 0 10px}
@@ -114,8 +117,8 @@ body::before{opacity:.22}
 @keyframes cheer{45%{transform:translateY(-13px) rotate(4deg)}}
 @keyframes idle{50%{transform:translateY(-4px)}}
 @keyframes float-word{50%{transform:translateY(-5px) rotate(-1deg)}}
-@media(max-width:760px){.shell{width:calc(100% - 22px)}.quest-setup{grid-template-columns:1fr 1.45fr;gap:10px}.quest-focus{grid-column:1/-1}.map-nodes{grid-template-columns:repeat(2,minmax(0,1fr))}.map-node .map-sigil{width:34px;height:34px;font-size:16px}.map-node .collected{left:45px}.scene-grid{grid-template-columns:minmax(0,1fr) minmax(115px,.32fr);padding-inline:12px;gap:9px}.scene-guide{min-height:240px}.guide-speech{font-size:11px;padding:7px}.guide-speech strong{font-size:14px}.mission-header{padding-inline:12px}.trail{margin-inline:12px}.mission .choices{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:480px){.intro{align-items:start;flex-direction:column;gap:6px}.intro p{font-size:13px}.quest-note{flex-direction:column;gap:1px}.quest-setup{padding:8px;grid-template-columns:1fr 1fr}.book-picker button,.level-picker button{font-size:12px;padding:5px 7px}.map-node{min-height:132px;padding:8px}.map-legend{font-size:8px}.scene-grid{grid-template-columns:1fr}.scene-guide{grid-row:1;min-height:0;display:grid;grid-template-columns:75px minmax(0,1fr);align-items:center;padding:0}.guide-sprite{max-width:75px;min-height:75px}.guide-speech{max-width:none}.mission-header{gap:5px}.mission-count{font-size:11px;padding:4px 7px}.mission-header h1{font-size:29px}.mission-objective{font-size:12px}.stage.mission{min-height:0}.result-scene{grid-template-columns:1fr;padding:17px}.result-scene .scene-guide{grid-row:initial}.scene-listen .option,.scene-sort .option{min-height:72px}}
+@media(max-width:760px){.shell{width:calc(100% - 22px)}.quest-setup{grid-template-columns:1fr 1.45fr;gap:10px}.quest-focus{grid-column:1/-1}.map-node .map-sigil{width:38px;height:38px;font-size:16px}.map-node{transform:translate(-50%,-19px)}.scene-grid{grid-template-columns:minmax(0,1fr) minmax(115px,.32fr);padding-inline:12px;gap:9px}.scene-guide{min-height:240px}.guide-speech{font-size:11px;padding:7px}.guide-speech strong{font-size:14px}.mission-header{padding-inline:12px}.trail{margin-inline:12px}.mission .choices{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:480px){.intro{align-items:start;flex-direction:column;gap:6px}.intro p{font-size:13px}.quest-note{flex-direction:column;gap:1px}.quest-setup{padding:8px;grid-template-columns:1fr 1fr}.book-picker button,.level-picker button{font-size:12px;padding:5px 7px}.map{aspect-ratio:auto;min-height:565px}.map-illustration{background-size:cover}.route-desktop{display:none}.route-mobile{display:block}.map-node{left:var(--mobile-x);top:var(--mobile-y)}.map-node strong{font-size:14px;padding:4px 5px}.map-node .map-skill{font-size:10px}.map-legend{font-size:8px}.scene-grid{grid-template-columns:1fr}.scene-guide{grid-row:1;min-height:0;display:grid;grid-template-columns:75px minmax(0,1fr);align-items:center;padding:0}.guide-sprite{max-width:75px;min-height:75px}.guide-speech{max-width:none}.mission-header{gap:5px}.mission-count{font-size:11px;padding:4px 7px}.mission-header h1{font-size:29px}.mission-objective{font-size:12px}.stage.mission{min-height:0}.result-scene{grid-template-columns:1fr;padding:17px}.result-scene .scene-guide{grid-row:initial}.scene-listen .option,.scene-sort .option{min-height:72px}}
 @media(prefers-reduced-motion:reduce){.guide-sprite,.scene-context .option,.bridge-track .fresh,.mission .answer-feedback{animation:none!important}}
 .scene-guide .guide-sprite{transform-origin:50% 85%}
 .mission:not(.scene-context) .guide-sprite{border-radius:45% 45% 44% 44%;background-color:#e3bc81;background-blend-mode:multiply;box-shadow:inset 0 0 20px #976d5780}
