@@ -1,5 +1,5 @@
 import {catalog} from './bank.mjs?v=forge-workbench';
-import {modes,levels,createRound,sortingBoard,practiceContrasts,shuffle,choiceLabel,isVowelTile} from './engine.mjs?v=listen-sort';
+import {modes,levels,createRound,sortingBoard,practiceContrasts,shuffle,choiceLabel,isVowelTile} from './engine.mjs?v=continuous-flight';
 
 import {missions,flightMission} from './missions.mjs?v=listen-sort';
 import {makeStory} from './story.mjs?v=listen-sort';
@@ -27,7 +27,8 @@ flightMusic.volume=.13;
 function syncFlightMusic(){
   const inFlight=active?.settings.variant==='flight'&&['live','caught','missed'].includes(active.flightPhase)&&active.index<active.questions.length;
   const teacherSpeaking=voicePreference==='teacher'&&active?.teacherOpen;
-  if(inFlight&&musicEnabled&&!promptPlaying&&!teacherSpeaking&&!document.hidden){
+  if(inFlight&&musicEnabled&&!document.hidden){
+    flightMusic.volume=(promptPlaying||teacherSpeaking) ? .024 : .13;
     if(flightMusic.paused)flightMusic.play().catch(()=>{});
   } else flightMusic.pause();
 }
@@ -46,7 +47,8 @@ const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;
 const speech='speechSynthesis' in window?window.speechSynthesis:null;
 const AudioContextClass=window.AudioContext??window.webkitAudioContext;
 const canUseMic=Boolean(AudioContextClass&&navigator.mediaDevices?.getUserMedia);
-const loudEnough=.028;
+const loudEnough=.05;
+const voiceGoal=75;
 let mic;
 const voiceStorage='wordspell-voice-v2';
 let voicePreference='auto';
@@ -99,9 +101,10 @@ function stopSound(){
   audio.pause();
   speech?.cancel();
 }
-function playBundled(word,request){
+function playBundled(word,request,rate=1){
   if (request!==soundRequest)return;
   audio.src=new URL('./audio/ana/'+encodeURIComponent(word.toLowerCase())+'.mp3',import.meta.url).href;
+  audio.playbackRate=rate;
   audio.onended=()=>finishAudioPrompt(request);
   const unavailable=()=>{
     if(request===soundRequest)by('live').textContent='Audio is unavailable. Open Teacher word to read the prompt.';
@@ -153,19 +156,23 @@ try {
 }
 const roomKey=(book,mode)=>book+'-'+mode;
 const goalFor=count=>Math.ceil(count*2/3);
-const nodePositions=[
-  ['18%','32%','27%','24%'],['51%','29%','73%','24%'],['83%','33%','27%','51%'],
-  ['18%','75%','73%','51%'],['51%','72%','27%','80%'],['83%','75%','73%','80%'],
-];
+const nodePositions={
+  listen:['18%','32%','27%','24%'],
+  sort:['51%','72%','27%','80%'],
+  blend:['51%','29%','73%','24%'],
+  segment:['83%','33%','27%','51%'],
+  spell:['18%','75%','73%','51%'],
+  context:['83%','75%','73%','80%'],
+};
 function renderMap(){
   let earned=0;
   by('game-picker').innerHTML=modes.map((m,i)=>{
     const cleared=runes.has(roomKey(selection.book,m.id));
     earned+=Number(cleared);
-    const [x,y,mx,my]=nodePositions[i];
-    const title=m.title+' · '+missions[m.id].objective;
+    const [x,y,mx,my]=nodePositions[m.id];
+    const title='Mission '+(i+1)+', '+m.title+' · '+missions[m.id].objective;
     return `<button class="map-node ${m.color} ${cleared?'earned':''}" data-game="${m.id}" type="button" aria-label="${esc(title)}" style="--mx:${x};--my:${y};--mobile-x:${mx};--mobile-y:${my}">
-      <span class="map-sigil" aria-hidden="true">${esc(missions[m.id].glyph)}</span>
+      <span class="map-sigil" aria-hidden="true">${i+1}</span>
       ${cleared?'<span class="collected" title="Rune collected" aria-hidden="true">✦</span>':''}
       <strong>${esc(m.title)}</strong><span class="map-skill">${esc(m.skill)}</span>
     </button>`;
@@ -485,7 +492,7 @@ function readStory() {
       return;
     }
     const track=active.settings.book===2?'story-magic-v2':active.settings.group==='all'?'story-mixed-v2':'story-short-v2';
-    playBundled(track,soundRequest);
+    playBundled(track,soundRequest,.88);
     return;
   }
   const request=soundRequest;
@@ -493,7 +500,7 @@ function readStory() {
     const utterance=new SpeechSynthesisUtterance(line.textContent);
     utterance.voice=voice;
     utterance.lang='en-US';
-    utterance.rate=.83;
+    utterance.rate=.75;
     utterance.onstart=()=>{
       if(request!==soundRequest)return;
       paragraphs.forEach(p=>p.classList.toggle('reading',p===line));
@@ -590,33 +597,36 @@ function blend(q){
 function readControls(q){
   const ready=active.micReady;
   const fallback=active.micUnavailable;
-  const status=active.micMessage||(fallback?'Mic unavailable. Your teacher can still check your reading.':'Tap Start mic, then read the word out loud.');
+  const status=active.micMessage||(fallback?'Mic unavailable. Your teacher can still check your reading.':'Tap Start mic when you’re ready to read.');
   const next=active.index+1===active.questions.length?'Finish':'Next word';
   return `<div class="read-controls">
-    ${fallback||ready?'':`<button class="primary" type="button" data-action="${mic?'cancelMic':'readMic'}">${mic?'Stop mic':'Start mic'}</button>`}
-    ${fallback?'':`<div class="voice-meter ${ready?'heard':''}">
-      <span id="voice-meter-label">Sound meter</span><meter id="voice-level" aria-labelledby="voice-meter-label" min="0" max="100" value="${ready?100:0}"></meter>
+    ${fallback?'':`<div class="voice-meter ${ready?'heard':''}" style="--voice-goal:${voiceGoal}%">
+      <div class="voice-meter-top"><strong id="voice-meter-label">Voice power</strong><span>${ready?'✓ Goal reached!':'Aim for the star!'}</span></div>
+      <div class="voice-track"><meter id="voice-level" aria-labelledby="voice-meter-label" min="0" max="100" value="${ready?100:0}"></meter><span class="voice-goal" aria-hidden="true">★</span></div>
     </div>`}
-    <p class="mic-status" role="status">${esc(status)}</p>
+    <p class="mic-status" role="status" tabindex="-1">${esc(status)}</p>
+    ${fallback||ready?'':`<button class="quiet" type="button" data-action="${mic?'cancelMic':'readMic'}">${mic?'Stop mic':'Start mic'}</button>`}
     <div class="teacher-check" role="group" aria-label="Teacher check"><strong>Teacher check</strong>
       <button class="primary" type="button" data-action="readCorrect" ${ready||fallback?'':'disabled'}>${next} →</button>
       <button class="quiet" type="button" data-action="readAgain">Try again</button>${audioButton(q.entry.word,'Hear the word')}
     </div></div>`;
 }
 async function startMic(){
-  if(!canUseMic||mic||active.spin!==true||active.verdict!==null||active.micReady)return;
+  if(!canUseMic||mic||!active.spin||active.verdict!==null||active.micReady||active.micUnavailable)return;
   stopSound();
   const round=active;
   const session={};
   mic=session;
-  round.micMessage='Turn on your mic to read.';
-  render();
-  focusOption('[data-action=cancelMic]');
+  round.micMessage='Allow the mic when your browser asks.';
+  if(round.spin===true){
+    render();
+    play.querySelector('.mic-status')?.focus({preventScroll:true});
+  }
   try {
     session.context=new AudioContextClass();
     await session.context.resume();
     if(mic!==session)return;
-    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:false}});
     if(mic!==session){stream.getTracks().forEach(track=>track.stop());return;}
     session.stream=stream;
     const analyser=session.context.createAnalyser();
@@ -626,10 +636,14 @@ async function startMic(){
     let heardSince=null;
     const listen=now=>{
       if(mic!==session)return;
+      if(round.spin!==true){
+        session.frame=requestAnimationFrame(listen);
+        return;
+      }
       analyser.getFloatTimeDomainData(samples);
       const rms=Math.sqrt(samples.reduce((sum,value)=>sum+value*value,0)/samples.length);
       const meter=by('voice-level');
-      if(meter)meter.value=Math.min(100,100*rms/loudEnough);
+      if(meter)meter.value=Math.min(100,voiceGoal*rms/loudEnough);
       heardSince=rms>=loudEnough?(heardSince??now):null;
       if(heardSince!==null&&now-heardSince>=120){
         stopListening();
@@ -644,9 +658,11 @@ async function startMic(){
     stream.getAudioTracks().forEach(track=>track.addEventListener('ended',()=>{
       if(mic===session)micUnavailable(round);
     }));
-    round.micMessage='Reading time! Say the sounds, then read the word.';
-    render();
-    focusOption('[data-action=cancelMic]');
+    round.micMessage='Use a strong voice! Say the sounds, then read the word.';
+    if(round.spin===true){
+      render();
+      play.querySelector('.mic-status')?.focus({preventScroll:true});
+    }
     session.frame=requestAnimationFrame(listen);
   } catch {
     if(mic===session)micUnavailable(round);
@@ -656,8 +672,10 @@ function micUnavailable(round){
   stopListening();
   round.micUnavailable=true;
   round.micMessage='Mic unavailable. Your teacher can still check your reading.';
-  render();
-  focusOption('[data-action=readCorrect]');
+  if(round.spin===true){
+    render();
+    focusOption('[data-action=readCorrect]');
+  }
 }
 function cauldron(){
   const percent=Math.min(91,Math.round(91*active.score/active.questions.length));
@@ -950,6 +968,7 @@ const actions={
     const session=active;
     const motion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     active.spin='turning';
+    startMic();
     render();
     const reels=[...play.querySelectorAll('[data-reel]')];
     reels.forEach((reel,index)=>setTimeout(()=>{
@@ -959,7 +978,7 @@ const actions={
       if(index===reels.length-1){
         active.spin=true;
         render();
-        (play.querySelector('[data-action=readMic]')??play.querySelector('.teacher-read-check summary'))?.focus({preventScroll:true});
+        play.querySelector('.mic-status')?.focus({preventScroll:true});
       }
     },motion?60+index*70:520+index*260));
   },
@@ -983,9 +1002,10 @@ const actions={
   readAgain:()=>{
     stopListening();
     active.micReady=false;
+    if(!active.micUnavailable){startMic();return;}
     active.micMessage='Say each sound, then read the word.';
     render();
-    focusOption(active.micUnavailable?'[data-action=readCorrect]':'[data-action=readMic]');
+    focusOption('[data-action=readCorrect]');
   },
   readStory,
   forge:checkForgeWord,

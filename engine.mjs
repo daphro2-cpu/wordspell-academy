@@ -2,10 +2,10 @@ import {bookWords, labels} from './bank.mjs?v=sound-tiles';
 
 export const modes = [
   {id:'listen', title:'Echo Tower', skill:'Hear & identify', description:'Listen closely and choose the sound you hear.', icon:'◖))', color:'mint'},
+  {id:'sort', title:'The Sorting Hall', skill:'Hear & sort sounds', description:'Hear each word, then send it to the box for its sound.', icon:'↔', color:'rose'},
   {id:'blend', title:'Blend Bridge', skill:'Blend & read', description:'Spin a word. Say its sounds and read it aloud.', icon:'a+b', color:'peach'},
   {id:'segment', title:'Sound Potions', skill:'Segment sounds', description:'Listen and place one sound tile in each potion slot.', icon:'⋮', color:'lilac'},
   {id:'spell', title:'Spelling Forge', skill:'Build & spell', description:'Tap letters to spell the word.', icon:'a_e', color:'gold'},
-  {id:'sort', title:'The Sorting Hall', skill:'Hear & sort sounds', description:'Hear each word, then send it to the box for its sound.', icon:'↔', color:'rose'},
   {id:'context', title:'Sentence Quest', skill:'Read in context', description:'Find words with the right sound or spelling to bring a story back.', icon:'···', color:'blue'},
 ];
 
