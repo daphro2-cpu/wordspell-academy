@@ -156,22 +156,22 @@ try {
 }
 const roomKey=(book,mode)=>book+'-'+mode;
 const goalFor=count=>Math.ceil(count*2/3);
-const nodePositions={
-  listen:['18%','32%','27%','24%'],
-  sort:['51%','72%','27%','80%'],
-  blend:['51%','29%','73%','24%'],
-  segment:['83%','33%','27%','51%'],
-  spell:['18%','75%','73%','51%'],
-  context:['83%','75%','73%','80%'],
+const landmarkPositions={
+  listen:['0%','7%'],
+  sort:['50%','100%'],
+  blend:['50%','15%'],
+  segment:['100%','7%'],
+  spell:['0%','100%'],
+  context:['100%','100%'],
 };
 function renderMap(){
   let earned=0;
   by('game-picker').innerHTML=modes.map((m,i)=>{
     const cleared=runes.has(roomKey(selection.book,m.id));
     earned+=Number(cleared);
-    const [x,y,mx,my]=nodePositions[m.id];
+    const [artX,artY]=landmarkPositions[m.id];
     const title='Mission '+(i+1)+', '+m.title+' · '+missions[m.id].objective;
-    return `<button class="map-node ${m.color} ${cleared?'earned':''}" data-game="${m.id}" type="button" aria-label="${esc(title)}" style="--mx:${x};--my:${y};--mobile-x:${mx};--mobile-y:${my}">
+    return `<button class="map-node ${m.color} ${cleared?'earned':''}" data-game="${m.id}" type="button" aria-label="${esc(title)}" style="--landmark-x:${artX};--landmark-y:${artY}">
       <span class="map-sigil" aria-hidden="true">${i+1}</span>
       ${cleared?'<span class="collected" title="Rune collected" aria-hidden="true">✦</span>':''}
       <strong>${esc(m.title)}</strong><span class="map-skill">${esc(m.skill)}</span>
