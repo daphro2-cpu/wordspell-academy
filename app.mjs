@@ -2,7 +2,7 @@ import {catalog} from './bank.mjs?v=book2-textbook';
 import {modes,levels,createRound,sortingBoard,practiceContrasts,shuffle,choiceLabel,isVowelTile} from './engine.mjs?v=book2-textbook';
 
 import {missions,flightMission} from './missions.mjs?v=listen-sort';
-import {makeStory} from './story.mjs?v=book2-textbook';
+import {makeStory} from './story.mjs?v=sled-story';
 import {reviewPicture} from './review.mjs?v=flight-pictures';
 
 const by=id=>document.getElementById(id);
@@ -512,11 +512,12 @@ function restoredText(page,found) {
 }
 function storyIllustration(page){
   if(page.art)return '<img class="story-art" src="./assets/story-'+esc(page.art)+'.webp" alt="'+esc(page.imageAlt)+'">';
-  return '<div class="story-picture-clues">'+page.targets.map(word=>{
-    const picture=reviewPicture(word);
-    if(!picture)return '';
-    return picture.src?'<img src="'+esc(picture.src)+'" alt="">':'<span aria-hidden="true">'+esc(picture.icons)+'</span>';
-  }).join('')+'</div>';
+  if(page.sledPanel!==undefined){
+    const x=page.sledPanel%3*50;
+    const y=page.sledPanel<3?0:100;
+    return `<span class="story-art sled-art" role="img" aria-label="${esc(page.imageAlt)}" style="background-position:${x}% ${y}%"></span>`;
+  }
+  return '';
 }
 function storyView(mission) {
   const done=active.index===active.questions.length;
@@ -524,7 +525,7 @@ function storyView(mission) {
   const complete=q&&active.found.size===q.targets.length;
   const content=done
     ? `<h2>You brought the words back!</h2><div class="story-scroll">${active.questions.map(page=>'<figure class="restored-page">'+storyIllustration(page)+'<p>'+restoredText(page,new Set(page.targets))+'</p></figure>').join('')}</div>
-      <div class="play-actions"><button class="primary" data-action="readStory" type="button">Read with me</button><button class="quiet" data-action="replay" type="button">Play again</button></div><p id="story-read-note" role="status"></p>${wordReview(active.questions.flatMap(page=>page.targets.map(word=>({word}))))}`
+      <div class="play-actions"><button class="primary" data-action="readStory" type="button">Read with me</button><button class="quiet" data-action="replay" type="button">Play again</button></div><p id="story-read-note" role="status"></p>${wordReview(active.questions.flatMap(page=>page.targets.map(word=>({word}))),true)}`
     : `<h2>${esc(q.clue)}</h2>${q.anchor?`<div class="story-clue"><strong>Example word: ${esc(q.anchor)}</strong>${audioButton(q.anchor,'Hear the example')}</div>`:''}
       <p class="story-directions">${q.anchor?'Use the example to help you. ':''}${q.anchor&&q.middle&&!q.matchSpelling?'Read the choices. Tap the words with the same sound in the middle.':'Read the choices. Tap the words that match the clue.'} The words you tap go in the blanks.</p>
       <div class="story-scroll"><figure class="restored-page">${storyIllustration(q)}<p>${restoredText(q,active.found)}</p></figure></div>
@@ -538,7 +539,7 @@ function storyView(mission) {
 function storyPuzzle(){
   const placed=active.index;
   return `<div class="story-panels" aria-label="${placed} of ${active.questions.length} pages restored">
-    ${active.questions.map((page,index)=>'<div class="story-panel '+(index===placed-1?'just-fit':'')+'">'+(index<placed?storyIllustration(page):'<span aria-hidden="true">✧</span>')+'</div>').join('')}
+    ${active.questions.map((page,index)=>'<div class="story-panel '+(index===placed-1?'just-fit':'')+'">'+(index<placed?(storyIllustration(page)||'<span aria-hidden="true">✓</span>'):'<span aria-hidden="true">✧</span>')+'</div>').join('')}
   </div>`;
 }
 function catchWord(word) {
@@ -559,6 +560,10 @@ function readStory() {
   const note=by('story-read-note');
   if(voice==='teacher') {note.textContent='Take turns reading the story out loud.';return;}
   if(voice==='bundled'){
+    if(active.settings.book===3&&active.settings.group==='two'){
+      playBundled('story-sled-'+active.settings.level,soundRequest,.88);
+      return;
+    }
     if(!((active.settings.book===1&&['all','vowels'].includes(active.settings.group))||(active.settings.book===2&&active.settings.group==='magic'))){
       note.textContent='Read the story out loud together. Choose a US voice in Teacher guide for narration on this trail.';
       return;
@@ -927,12 +932,13 @@ function addLetter(letter){
   render();
   play.querySelector('[data-letter="'+letter+'"]')?.focus({preventScroll:true});
 }
-function wordReview(entries){
+function wordReview(entries,storyOnly=false){
   const words=[...new Map(entries.map(entry=>[entry.word.toLowerCase(),entry])).values()];
-  return `<section class="word-review" aria-label="Read the words again"><h2>Read the words again</h2><p>Read a word. Then tap it to see the picture.</p>
+  return `<section class="word-review" aria-label="Read the words again"><h2>Read the words again</h2><p>${storyOnly?'Read each word, then tap Hear it to check.':'Read a word. Then tap it to see the picture.'}</p>
     <div class="review-cards">${words.map(entry=>{
       const word=entry.word;
-      const picture=entry.nonsense?null:reviewPicture(word);
+      const clue=entry.nonsense?null:reviewPicture(word);
+      const picture=storyOnly&&!clue?.src?null:clue;
       const opened=active.revealed.has(word);
       const art=picture?.src?'<img alt="" src="'+esc(picture.src)+'">':'<span class="review-icon" aria-hidden="true">'+esc(picture?.icons??'')+'</span>';
       return `<div class="review-card">${picture?'<button type="button" class="review-flip" data-review-word="'+esc(word)+'" aria-expanded="'+opened+'">'+(opened?art:'<span class="review-curtain" aria-hidden="true">✧</span>')+'<strong>'+esc(word)+'</strong></button>':'<strong class="review-text">'+esc(word)+'</strong>'}

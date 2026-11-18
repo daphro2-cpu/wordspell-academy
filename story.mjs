@@ -16,15 +16,33 @@ const magicStory=[
   {sentence:'She took a {note} {home}.', art:'note-home', imageAlt:'Gigi takes a folded note to her house.', anchor:'rope', middle:true, matchSpelling:true, clue:'Find 2 o space e words.', targets:['note','home'], decoys:['kite','cup','tape']},
 ];
 
+const sledStory=[
+  {sentence:'Gigi pulled her {sled} up the hill. “Don’t {slip}!” called Juniper.', pattern:'sl', anchor:'sleep', targets:['sled','slip'], imageAlt:'Gigi pulls a sled up a snowy hill with Juniper.'},
+  {sentence:'The wind made a little {flag} {flap}. Then the flag came loose!', pattern:'fl', anchor:'float', targets:['flag','flap'], imageAlt:'A golden flag flaps in the wind beside Gigi.'},
+  {sentence:'Gigi took one more {step}. Then she had to {stop} to pick up the flag.', pattern:'st', targets:['step','stop'], imageAlt:'Gigi stops to pick up the fallen flag.'},
+  {sentence:'With a {grin}, Juniper said, “{Grab} the rope. I’ll help you!”', pattern:'gr', anchor:'green', targets:['grin','grab'], imageAlt:'Juniper grins and hands Gigi the sled rope.'},
+  {sentence:'Gigi used a {clip} to put the flag back. Juniper began to {clap}.', pattern:'cl', targets:['clip','clap'], imageAlt:'Gigi clips the flag onto its pole while Juniper claps.'},
+];
+
 export function makeStory({book,group,level}) {
   if (book===1 && group==='all') return mixedStory;
   if (book===1 && group==='vowels') return shortStory;
   if (book===2 && group==='magic') return magicStory;
+  const pageCount=level==='simple'?3:level==='medium'?4:5;
+  if(book===3&&group==='two'){
+    return sledStory.slice(0,pageCount).map((page,index)=>({
+      ...page,
+      sledPanel:index,
+      matchSpelling:true,
+      clue:`Find 2 words that start with ${page.pattern}.`,
+      decoys:shuffle(bookWords[3].filter(entry=>entry.group==='two'&&!entry.word.startsWith(page.pattern)))
+        .slice(0,pageCount-1).map(entry=>entry.word),
+    }));
+  }
   const pool=bookWords[book].filter(e=>matchFocus(book,group,e));
   const patterns=[...new Set(pool.map(e=>e.pattern))];
-  const pageCount=level==='simple'?3:level==='medium'?4:5;
   const pageFrames=[
-    'Gigi found {A} on a scroll.',
+    'Gigi found {A} written on a scroll.',
     'The Word Monster wrote {A} on the wall.',
     'The scroll lit up when Gigi read {A}.',
     'Gigi found a new clue. It said {A}.',
@@ -45,7 +63,7 @@ export function makeStory({book,group,level}) {
     const spelling=matching[0].group!=='vowels';
     const soundLabel=pattern==='oo-long'?'long oo':pattern==='oo-short'?'short oo':label;
     return {
-      sentence:frame.replace('{A}',targets.map(word=>'{'+word+'}').join(targets.length===2?' and ':', ')),
+      sentence:frame.replace('{A}',targets.map(word=>'“{'+word+'}”').join(targets.length===2?' and ':', ')),
       clue:spelling?'Find '+targets.length+' '+soundLabel+' '+(targets.length===1?'word.':'words.'):'Find '+targets.length+' '+label+' '+(targets.length===1?'word.':'words.'),
       pattern,
       anchor,
