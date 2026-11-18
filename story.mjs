@@ -17,11 +17,11 @@ const magicStory=[
 ];
 
 const sledStory=[
-  {sentence:'Gigi pulled her {sled} up the hill. “Don’t {slip}!” called Juniper.', pattern:'sl', anchor:'sleep', targets:['sled','slip'], imageAlt:'Gigi pulls a sled up a snowy hill with Juniper.'},
-  {sentence:'The wind made a little {flag} {flap}. Then the flag came loose!', pattern:'fl', anchor:'float', targets:['flag','flap'], imageAlt:'A golden flag flaps in the wind beside Gigi.'},
-  {sentence:'Gigi took one more {step}. Then she had to {stop} to pick up the flag.', pattern:'st', targets:['step','stop'], imageAlt:'Gigi stops to pick up the fallen flag.'},
-  {sentence:'With a {grin}, Juniper said, “{Grab} the rope. I’ll help you!”', pattern:'gr', anchor:'green', targets:['grin','grab'], imageAlt:'Juniper grins and hands Gigi the sled rope.'},
-  {sentence:'Gigi used a {clip} to put the flag back. Juniper began to {clap}.', pattern:'cl', targets:['clip','clap'], imageAlt:'Gigi clips the flag onto its pole while Juniper claps.'},
+  {sentence:'Gigi pulled her {sled} up the hill. “Don’t {slip}!” called Juniper.', pattern:'sl', tricky:'slid', anchor:'sleep', targets:['sled','slip'], imageAlt:'Gigi pulls a sled up a snowy hill with Juniper.'},
+  {sentence:'The wind made a little {flag} {flap}. Then the flag came loose!', pattern:'fl', tricky:'flew', anchor:'float', targets:['flag','flap'], imageAlt:'A golden flag flaps in the wind beside Gigi.'},
+  {sentence:'Gigi took one more {step}. Then she had to {stop} to pick up the flag.', pattern:'st', tricky:'stuck', targets:['step','stop'], imageAlt:'Gigi stops to pick up the fallen flag.'},
+  {sentence:'With a {grin}, Juniper said, “{Grab} the rope. I’ll help you!”', pattern:'gr', tricky:'grew', anchor:'green', targets:['grin','grab'], imageAlt:'Juniper grins and hands Gigi the sled rope.'},
+  {sentence:'Gigi used a {clip} to put the flag back. Juniper began to {clap}.', pattern:'cl', tricky:'clung', targets:['clip','clap'], imageAlt:'Gigi clips the flag onto its pole while Juniper claps.'},
 ];
 
 function illustratedStory(pages,level){
@@ -38,13 +38,14 @@ export function makeStory({book,group,level}) {
   if (book===2 && group==='magic') return illustratedStory(magicStory,level);
   const pageCount=level==='simple'?3:level==='medium'?4:5;
   if(book===3&&group==='two'){
-    return sledStory.slice(0,pageCount).map((page,index)=>({
+    return sledStory.slice(0,pageCount).map(({tricky,...page},index)=>({
       ...page,
       sledPanel:index,
+      ordered:level==='difficult',
       matchSpelling:true,
       clue:`Find 2 words that start with ${page.pattern}.`,
-      decoys:shuffle(bookWords[3].filter(entry=>entry.group==='two'&&!entry.word.startsWith(page.pattern)))
-        .slice(0,pageCount-1).map(entry=>entry.word),
+      decoys:[...shuffle(bookWords[3].filter(entry=>entry.group==='two'&&!entry.word.startsWith(page.pattern)))
+        .slice(0,pageCount-1).map(entry=>entry.word),...(level==='difficult'?[tricky]:[])],
     }));
   }
   const pool=bookWords[book].filter(e=>matchFocus(book,group,e));

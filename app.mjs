@@ -1,8 +1,8 @@
 import {catalog} from './bank.mjs?v=book2-textbook';
-import {modes,levels,createRound,sortingBoard,practiceContrasts,shuffle,choiceLabel,isVowelTile} from './engine.mjs?v=book2-textbook';
+import {modes,levels,createRound,sortingBoard,practiceContrasts,shuffle,choiceLabel,isVowelTile} from './engine.mjs?v=difficulty';
 
 import {missions,flightMission} from './missions.mjs?v=listen-sort';
-import {makeStory} from './story.mjs?v=story-levels';
+import {makeStory} from './story.mjs?v=difficulty';
 import {reviewPicture} from './review.mjs?v=flight-pictures';
 
 const by=id=>document.getElementById(id);
@@ -629,13 +629,17 @@ function bridgeProgress(count){
   </div>`;
 }
 function options(q){
-  return '<div class="choices" role="group" aria-label="Answer choices">'+q.options.map((key,i)=>{
+  const showExamples=active.settings.level==='simple';
+  const exampleFor=i=>active.verdict===null&&q.samples[i]&&q.samples[i]!==q.entry.word&&voicePreference!=='teacher';
+  const choices='<div class="choices" role="group" aria-label="Answer choices">'+q.options.map((key,i)=>{
     const open=active.verdict===true&&key===q.correct;
     const inside=open?'<span class="door-reveal" aria-hidden="true"><span>✦</span>'+esc(q.entry.word)+'</span>':'';
     const pick='<button type="button" data-choice="'+i+'" class="option sound-door'+optionClass(key,q)+(open?' door-open':'')+'" '+(active.verdict===null?'':'disabled')+'>'+inside+'<span class="door-leaf">'+shown(key)+'</span></button>';
-    const example=active.verdict===null&&q.samples[i]&&voicePreference!=='teacher'?audioButton(q.samples[i],'Hear an example'):'';
+    const example=showExamples&&exampleFor(i)?audioButton(q.samples[i],'Hear an example'):'';
     return '<div class="door-choice">'+pick+example+'</div>';
   }).join('')+'</div>';
+  if(showExamples||!q.options.some((_,i)=>exampleFor(i)))return choices;
+  return choices+'<details class="teacher-note"><summary>Need sound examples?</summary><div class="play-actions">'+q.options.map((key,i)=>exampleFor(i)?audioButton(q.samples[i],'Example for '+choiceLabel(key)):'').join('')+'</div></details>';
 }
 function optionClass(key,q){
   if(active.verdict===null)return '';

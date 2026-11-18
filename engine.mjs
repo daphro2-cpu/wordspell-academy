@@ -10,9 +10,9 @@ export const modes = [
 ];
 
 export const levels={
-  simple:{title:'Simple', count:6, options:2, rank:0, hint:'2 choices · extra cues'},
-  medium:{title:'Medium',count:8,options:3,rank:1,hint:'3 choices · less support'},
-  difficult:{title:'Difficult',count:10,options:4,rank:2,hint:'Closer choices · full alphabet at the Forge finale'},
+  simple:{title:'Simple', count:6, options:2, rank:0, hint:'Shorter rounds · more examples · guided practice'},
+  medium:{title:'Medium',count:8,options:3,rank:1,hint:'More practice · closer choices · help on request'},
+  difficult:{title:'Difficult',count:10,options:4,rank:2,hint:'Trickier choices · fewer cues · read the sentence to fill each blank'},
 };
 
 const vowelSound={
@@ -171,10 +171,11 @@ function spellingDistance(a,b){
   return row[b.length];
 }
 
-function flightOptions(entry,preferred,rng){
+function flightOptions(entry,preferred,rank,rng){
   const answer=entry.word.toLowerCase();
   const curated=shortVowelFlightChoices[answer];
-  if(curated)return shuffle([entry.word,...curated],rng);
+  const closeCount=2+rank;
+  if(curated&&rank===2)return shuffle([entry.word,...curated],rng);
   const preferredWords=new Set(preferred.map(item=>item.word.toLowerCase()));
   const candidates=uniqueWords(Object.values(bookWords).flat())
     .filter(item=>item.word.toLowerCase()!==answer)
@@ -183,7 +184,10 @@ function flightOptions(entry,preferred,rng){
       return {word:item.word,distance:spellingDistance(answer,word),lengthGap:Math.abs(answer.length-word.length),preferred:preferredWords.has(word)};
     });
   const ranked=shuffle(candidates,rng).sort((a,b)=>a.distance-b.distance||a.lengthGap-b.lengthGap||Number(b.preferred)-Number(a.preferred));
-  return shuffle([entry.word,...ranked.slice(0,4).map(item=>item.word)],rng);
+  const close=curated??ranked.map(item=>item.word);
+  const distant=shuffle(candidates.filter(item=>item.distance>=2&&item.lengthGap<=1&&!close.slice(0,closeCount).includes(item.word)),rng);
+  const choices=[...new Set([...close.slice(0,closeCount),...distant.map(item=>item.word),...close])];
+  return shuffle([entry.word,...choices.slice(0,4)],rng);
 }
 
 const blendLetterContrasts={
@@ -256,7 +260,7 @@ function question(mode,book,e,all,level,rng,group,index,total) {
   if (mode==='blend') return {...base,prompt:'Spin. Say the sounds. Read the word.',correct:e.word};
   if (mode==='segment') {
     const correct=e.tiles;
-    const challenge=index>0&&index>=total-2;
+    const challenge=index>=Math.max(1,total-(level.rank===2?Math.ceil(total/2):2));
     const similarTiles={ng:['n','m'],sh:['ch','s'],ch:['sh','tch'],th:['f','d'],ph:['f','sh'],
       ck:['k','c'],tch:['ch','sh'],dge:['j','g'],ff:['f','ss'],ll:['l','ss'],ss:['s','ff']};
     const nearby=correct.flatMap(tile=>similarTiles[tile]??
@@ -281,7 +285,7 @@ function question(mode,book,e,all,level,rng,group,index,total) {
     return {...base,prompt:mask?'Listen. Fill in the missing letters.':'Listen. Tap the letters to spell it.',mask,correct,letters,audio:true};
   }
   if (mode==='flight') {
-    return {...base,prompt:'Hear the word. Catch it!',correct:e.word,options:flightOptions(e,own,rng),audio:true};
+    return {...base,prompt:'Hear the word. Catch it!',correct:e.word,options:flightOptions(e,own,level.rank,rng),audio:true};
   }
   throw new Error('Unknown practice mode: '+mode);
 }
@@ -294,8 +298,10 @@ export function createRound({book, mode, level, group='all', review},rng=Math.ra
   const source=review??all;
   const eligible=source.filter(e=>mode!=='segment'||!yooWords.has(e.word));
   let pool=shuffle(eligible,rng);
-  if (settings.rank===0 && !review) {
-    pool=pool.sort((a,b)=>Math.max(0,a.tiles.length-4)-Math.max(0,b.tiles.length-4));
+  if (!review && (mode==='blend'||settings.rank===0)) {
+    const complexity=entry=>entry.tiles.length+Number(entry.tiles.some(tile=>tile.endsWith('_e')));
+    if(mode==='blend'&&settings.rank!==1) pool.sort((a,b)=>(complexity(a)-complexity(b))*(settings.rank===0?1:-1));
+    else if(mode!=='blend') pool.sort((a,b)=>Math.max(0,a.tiles.length-4)-Math.max(0,b.tiles.length-4));
   }
   const selected=[];
   if(group==='all'&&!review) {
