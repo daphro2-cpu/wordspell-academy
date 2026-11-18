@@ -16,7 +16,7 @@ export const missions = {
     win:'Your word rune is forged!', miss:'That rune is still cold.', reward:['rune forged','runes forged'], glyph:'◆',
   },
   sort: {
-    guide:'Juniper the keeper', objective:'Send words through the right portal', intro:'A cloud covered the words! Brush it away. Read the words and send them home.',
+    guide:'Juniper the keeper', objective:'Send words through the right portal', intro:'The clouds are hiding our words! Listen and tap the right box to bring each word home.',
     win:'The portal lights up!', miss:'That portal leads somewhere else.', reward:['word sorted','words sorted'], glyph:'✶',
   },
   context: {

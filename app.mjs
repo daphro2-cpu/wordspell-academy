@@ -1,8 +1,8 @@
 import {catalog} from './bank.mjs?v=forge-workbench';
-import {modes,levels,createRound,sortingBoard,practiceContrasts,shuffle,choiceLabel,isVowelTile} from './engine.mjs?v=sound-tiles';
+import {modes,levels,createRound,sortingBoard,practiceContrasts,shuffle,choiceLabel,isVowelTile} from './engine.mjs?v=listen-sort';
 
-import {missions,flightMission} from './missions.mjs?v=sound-tiles';
-import {makeStory} from './story.mjs?v=story-clues';
+import {missions,flightMission} from './missions.mjs?v=listen-sort';
+import {makeStory} from './story.mjs?v=listen-sort';
 import {reviewPicture} from './review.mjs?v=flight-pictures';
 
 const by=id=>document.getElementById(id);
@@ -197,7 +197,7 @@ function start(settings) {
   const questions=board?.cards??(settings.mode==='context'
     ? makeStory(settings).map(page=>({...page,options:shuffle([...page.targets,...page.decoys])}))
     : createRound({...settings,mode:settings.variant==='flight'?'flight':settings.mode}));
-  active={settings,questions,index:0,board,clouds:new Set(),sorted:new Set(),boardMessage:'',drops:[],hatched:false,mistakes:[],score:0,verdict:null,selected:null,spin:false,micMessage:'',micReady:false,micUnavailable:!canUseMic,spelling:'',forgeStart:0,forgeIndex:0,forgeSolved:new Set(),forgeDrafts:new Map(),forgeStriking:false,forgeMessage:'',revealed:new Set(),found:new Set(),storyMessage:'',teacherOpen:false,outcomes:[],earned:false,flightStarted:performance.now(),flightPhase:'ready',flightRemaining:flightTime[settings.level]*1000};
+  active={settings,questions,index:0,board,sortStarted:false,boardMessage:'',drops:[],hatched:false,mistakes:[],score:0,verdict:null,selected:null,spin:false,micMessage:'',micReady:false,micUnavailable:!canUseMic,spelling:'',forgeStart:0,forgeIndex:0,forgeSolved:new Set(),forgeDrafts:new Map(),forgeStriking:false,forgeMessage:'',revealed:new Set(),found:new Set(),storyMessage:'',teacherOpen:false,outcomes:[],earned:false,flightStarted:performance.now(),flightPhase:'ready',flightRemaining:flightTime[settings.level]*1000};
   lobby.hidden=true;
   play.hidden=false;
   history.replaceState(null,'','#play');
@@ -270,42 +270,49 @@ function render() {
   play.querySelector('.potion-demo')?.addEventListener('toggle',e=>{if(active)active.demoOpen=e.target.open;});
 }
 function sortView(mission) {
-  const {questions,board,clouds,sorted,selected}=active;
-  const wordTiles=questions.map(({entry},index)=>{
-    if(sorted.has(index))return '';
-    const word=esc(entry.word);
-    if(!clouds.has(index))return '<button type="button" class="cloud-card" data-cloud="'+index+'" aria-label="Brush away cloud '+(index+1)+'"><span aria-hidden="true">☁</span></button>';
-    return '<button type="button" class="found-word" data-sort-word="'+index+'" draggable="true" aria-pressed="'+(selected===index)+'">'+word+'</button>';
-  }).join('');
-  return `<article class="stage mission scene-sort"><header class="mission-header"><div><h1 tabindex="-1">The Sorting Hall</h1><p class="mission-objective">Clear the clouds. Sort the words.</p></div><span class="mission-count">${sorted.size} of ${questions.length} words sorted</span></header>
+  const {questions,board,score,sortStarted}=active;
+  const next=questions[score];
+  const placed=questions.slice(0,score);
+  return `<article class="stage mission scene-sort"><header class="mission-header"><div><h1 tabindex="-1">The Sorting Hall</h1><p class="mission-objective">Listen and bring the words home.</p></div><span class="mission-count">${score} of ${questions.length} words sorted</span></header>
     <div class="scene-grid"><div class="task">
-    <h2>Brush away a cloud. Read the word.</h2><p class="prompt">Tap a word, then tap its door. You can drag it, too.</p>
-    <div class="cloud-pile" role="group" aria-label="Clouds and words">${wordTiles}</div>
-    <div class="word-portals" role="group" aria-label="Sort words into groups">${board.categories.map((key,index)=>'<div class="word-portal"><button type="button" data-portal="'+index+'">'+shown(key)+'</button><div class="portal-words">'+[...sorted].filter(i=>questions[i].correct===key).map(i=>'<span>'+esc(questions[i].entry.word)+'</span>').join('')+'</div></div>').join('')}</div>
+    <h2>${next?'Hear the word. Tap its box.':'Yay! All the words are home.'}</h2>
+    ${next?`<p class="prompt">${esc(board.prompt)} The word will appear when you tap the right box.</p>
+      <div class="sort-listen"><span aria-hidden="true">☁</span><button class="quiet audio" type="button" data-action="hearSort">◖)) ${sortStarted?'Hear it again':'Hear the word'}</button></div>
+      <details class="teacher-word"><summary>Teacher word</summary><p>${esc(next.entry.word)}</p></details>`:''}
+    <div class="word-portals" role="group" aria-label="Sound groups">${board.categories.map((key,index)=>{
+      const words=placed.filter(card=>card.correct===key);
+      return `<button class="word-portal" type="button" data-portal="${index}" ${next&&sortStarted?'':'disabled'}><span class="portal-label">${shown(key)}</span><span class="portal-words">${words.map(card=>'<span class="'+(card===placed.at(-1)?'just-sorted':'')+'">'+esc(card.entry.word)+'</span>').join('')}</span></button>`;
+    }).join('')}</div>
     <p class="story-status" role="status">${esc(active.boardMessage)}</p>
-    ${sorted.size===questions.length?'<button class="primary" type="button" data-action="finishSort">Read the words again →</button>':''}
+    ${next?'':'<button class="primary" type="button" data-action="finishSort">Let’s read! →</button>'}
     </div>${guideView(mission,null)}</div></article>`;
 }
-function clearCloud(index){
-  if(active.clouds.has(index))return;
-  active.clouds.add(index);
-  active.boardMessage='';
-  render();
-  play.querySelector('[data-sort-word="'+index+'"]')?.focus({preventScroll:true});
-}
-function sortWord(index,portal) {
-  if(!active.clouds.has(index)||active.sorted.has(index)){
-    active.boardMessage='Pick a word first.';
-  } else if(active.questions[index].correct===active.board.categories[portal]){
-    active.sorted.add(index);
-    active.selected=null;
-    active.score++;
-    active.boardMessage=active.sorted.size===active.questions.length?'You cleared the hall!':'That word is home!';
-  } else {
-    active.boardMessage='Try another door.';
+function hearSort(){
+  const next=active.questions[active.score];
+  if(!next)return;
+  if(!active.sortStarted){
+    active.sortStarted=true;
+    render();
+    focusOption('[data-action=hearSort]');
   }
+  say(next.entry.word);
+}
+function sortWord(portal) {
+  const next=active.questions[active.score];
+  if(!active.sortStarted||!next)return;
+  if(next.correct!==active.board.categories[portal]){
+    active.boardMessage='Try another box. You can hear the word again.';
+    play.querySelector('.story-status').textContent=active.boardMessage;
+    return;
+  }
+  active.score++;
+  active.boardMessage='That word is home!';
+  const following=active.questions[active.score];
   render();
-  (play.querySelector('[data-action=finishSort]')??play.querySelector('[data-portal="'+portal+'"]'))?.focus({preventScroll:true});
+  if(following){
+    say(following.entry.word);
+    focusOption('[data-portal="'+portal+'"]');
+  } else focusOption('[data-action=finishSort]');
 }
 function flightPicture(word){
   const picture=reviewPicture(word);
@@ -439,8 +446,8 @@ function storyView(mission) {
   const content=done
     ? `<h2>You brought the words back!</h2><div class="story-scroll">${active.questions.map(page=>'<figure class="restored-page">'+storyIllustration(page)+'<p>'+restoredText(page,new Set(page.targets))+'</p></figure>').join('')}</div>
       <div class="play-actions"><button class="primary" data-action="readStory" type="button">Read with me</button><button class="quiet" data-action="replay" type="button">Play again</button></div><p id="story-read-note" role="status"></p>${wordReview(active.questions.flatMap(page=>page.targets.map(word=>({word}))))}`
-    : `<h2>${esc(q.clue)}</h2><div class="story-clue">${audioButton(q.anchor,'Hear the clue word')}<strong>${esc(q.anchor)}</strong>
-      <p>${q.middle?'Say the choices. Listen for the same sound in the middle.':'Read the choices. Use the clue word to help.'}</p></div>
+    : `<h2>${esc(q.clue)}</h2>${q.anchor?`<div class="story-clue"><strong>Example word: ${esc(q.anchor)}</strong>${audioButton(q.anchor,'Hear the example')}</div>`:''}
+      <p class="story-directions">${q.anchor?'Use the example to help you. ':''}${q.anchor&&q.middle&&!q.matchSpelling?'Read the choices. Tap the words with the same sound in the middle.':'Read the choices. Tap the words that match the clue.'} The words you tap go in the blanks.</p>
       <div class="story-scroll"><figure class="restored-page">${storyIllustration(q)}<p>${restoredText(q,active.found)}</p></figure></div>
       <div class="choices story-words" role="group" aria-label="Words to find">${q.options.map(word=>'<button class="option'+(active.found.has(word)?' correct':'')+'" type="button" data-story-word="'+esc(word)+'" '+(active.found.has(word)||complete?'disabled':'')+'>'+esc(word)+'</button>').join('')}</div>
       <p role="status" class="story-status">${esc(active.storyMessage||active.found.size+' of '+q.targets.length+' words found')}</p>
@@ -670,7 +677,7 @@ function segment(q){
   const drops=active.drops;
   const full=drops.length===q.correct.length;
   const split=drops.some(tile=>tile.endsWith('_e'));
-  return `<p class="potion-instructions">Listen to the word. Say each sound as you tap its tile.</p>
+  return `<p class="potion-instructions">Listen to the word. Say each sound as you tap its tile.${q.tiles.length>new Set(q.correct).size?' Some tiles are extra.':''}</p>
     <details class="teacher-word potion-demo" ${active.demoOpen?'open':''}><summary>Show me an example</summary>
       <p>Hear <strong>ship</strong>. Say each sound and tap <strong>sh</strong>, <strong>i</strong>, then <strong>p</strong>. The letters <strong>sh</strong> work together for one sound.</p>
       ${audioButton('ship','Hear ship')}
@@ -713,9 +720,9 @@ function forgeView(mission){
   const cards=batch.map((q,i)=>{
     const index=active.forgeStart+i;
     const solved=active.forgeSolved.has(index);
-    const label=solved?q.entry.word:q.mask??'Word '+(i+1);
+    const label=solved?q.entry.word:q.mask??'Word '+(index+1);
     return `<div class="forge-card ${solved?'repaired':''}"><button class="quiet" type="button" data-forge-card="${index}" aria-pressed="${index===active.forgeIndex&&!ready}" ${solved||active.forgeStriking?'disabled':''}>${esc(label)}</button>
-      ${audioButton(q.entry.word,'Hear word '+(i+1),index)}</div>`;
+      ${audioButton(q.entry.word,'Hear word '+(index+1),index)}</div>`;
   }).join('');
   const q=question();
   return `<article class="stage mission scene-spell">
@@ -910,7 +917,10 @@ const actions={
       by('hatch-result')?.focus({preventScroll:true});
     },1150);
   },
+  hearSort,
   finishSort:()=>{
+    if(active.score!==active.questions.length)return;
+    stopSound();
     active.index=active.questions.length;
     awardRune();
     render();
@@ -1054,15 +1064,7 @@ document.addEventListener('click',e=>{
     active.boardMessage='';
     respond(chosen,chosen===q.correct);return;
   }
-  if(d.cloud!==undefined){clearCloud(Number(d.cloud));return;}
-  if(d.sortWord!==undefined){
-    active.selected=Number(d.sortWord);
-    active.boardMessage='Now pick its door.';
-    render();
-    play.querySelector('[data-sort-word="'+d.sortWord+'"]')?.focus({preventScroll:true});
-    return;
-  }
-  if(d.portal!==undefined)sortWord(active.selected,Number(d.portal));
+  if(d.portal!==undefined)sortWord(Number(d.portal));
 });
 
 let leverStart;
@@ -1088,22 +1090,6 @@ play.addEventListener('lostpointercapture',event=>{
   if(leverStart?.id!==event.pointerId)return;
   leverStart.lever.style.removeProperty('--pull');
   leverStart=null;
-});
-play.addEventListener('dragstart',e=>{
-  const word=e.target.closest('[data-sort-word]');
-  if(!word)return;
-  e.dataTransfer.setData('text/x-wordspell-card',word.dataset.sortWord);
-  e.dataTransfer.effectAllowed='move';
-});
-play.addEventListener('dragover',e=>{
-  if(e.target.closest('[data-portal]')&&e.dataTransfer.types.includes('text/x-wordspell-card'))e.preventDefault();
-});
-play.addEventListener('drop',e=>{
-  const portal=e.target.closest('[data-portal]');
-  const word=e.dataTransfer.getData('text/x-wordspell-card');
-  if(!portal||word==='')return;
-  e.preventDefault();
-  sortWord(Number(word),Number(portal.dataset.portal));
 });
 by('focus').addEventListener('change',e=>selection.group=e.target.value);
 by('teacher').addEventListener('click',()=>{voiceUi();guide.showModal();});

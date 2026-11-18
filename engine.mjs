@@ -5,14 +5,14 @@ export const modes = [
   {id:'blend', title:'Blend Bridge', skill:'Blend & read', description:'Spin a word. Say its sounds and read it aloud.', icon:'a+b', color:'peach'},
   {id:'segment', title:'Sound Potions', skill:'Segment sounds', description:'Listen and place one sound tile in each potion slot.', icon:'⋮', color:'lilac'},
   {id:'spell', title:'Spelling Forge', skill:'Build & spell', description:'Tap letters to spell the word.', icon:'a_e', color:'gold'},
-  {id:'sort', title:'The Sorting Hall', skill:'Read & sort patterns', description:'Send each word to its matching spelling or sound group.', icon:'↔', color:'rose'},
+  {id:'sort', title:'The Sorting Hall', skill:'Hear & sort sounds', description:'Hear each word, then send it to the box for its sound.', icon:'↔', color:'rose'},
   {id:'context', title:'Sentence Quest', skill:'Read in context', description:'Find words with the right sound or spelling to bring a story back.', icon:'···', color:'blue'},
 ];
 
 export const levels={
   simple:{title:'Simple', count:6, options:2, rank:0, hint:'2 choices · extra cues'},
   medium:{title:'Medium',count:8,options:3,rank:1,hint:'3 choices · less support'},
-  difficult:{title:'Difficult',count:10,options:4,rank:2,hint:'Closer choices · full alphabet in spelling'},
+  difficult:{title:'Difficult',count:10,options:4,rank:2,hint:'Closer choices · full alphabet at the Forge finale'},
 };
 
 const vowelSound={
@@ -220,9 +220,14 @@ export function sortingBoard({book,group,level},rng=Math.random) {
   const entries=bookWords[book].filter(entry=>matchFocus(book,group,entry));
   const family=shuffle([...new Set(entries.map(entry=>entry.group))],rng)[0];
   const pool=entries.filter(entry=>entry.group===family);
-  const keys=shuffle([...new Set(pool.map(entry=>patternKey(book,entry)))],rng);
-  const categories=keys.filter(key=>key!=='ll'||!keys.some(other=>other==='all'||other.startsWith('oll-'))).slice(0,levels[level].options);
-  const groups=categories.map(key=>shuffle(pool.filter(entry=>patternKey(book,entry)===key),rng));
+  const getKey=group==='all-oll'
+    ? entry=>entry.pattern==='oll-long'?'like roll':'like ball or doll'
+    : entry=>soundKey(book,entry);
+  const keys=shuffle([...new Set(pool.map(getKey))],rng);
+  const count=group==='n-ng'?3:levels[level].options;
+  const categories=keys.slice(0,count);
+  const groups=categories.map(key=>shuffle(pool.filter(entry=>getKey(entry)===key),rng));
+  const prompt=group==='all-oll'?'Listen to the middle sound.':groupPrompt(book,pool[0]);
   const cards=[];
   for(let pass=0;cards.length<levels[level].count&&groups.some(entries=>entries[pass]);pass++){
     for(let index=0;index<groups.length&&cards.length<levels[level].count;index++){
@@ -230,9 +235,9 @@ export function sortingBoard({book,group,level},rng=Math.random) {
       if(entry)cards.push({entry,correct:categories[index]});
     }
   }
-  return {categories,cards:shuffle(cards,rng)};
+  return {categories,cards:shuffle(cards,rng),prompt};
 }
-function question(mode,book,e,all,level,rng,group) {
+function question(mode,book,e,all,level,rng,group,index,total) {
   const base={mode, entry:e, explanation:ruleExplanation(book,e)};
   const family=comparable(book,e,all);
   const nasal=['n','ng','m'];
@@ -251,25 +256,29 @@ function question(mode,book,e,all,level,rng,group) {
   if (mode==='blend') return {...base,prompt:'Spin. Say the sounds. Read the word.',correct:e.word};
   if (mode==='segment') {
     const correct=e.tiles;
+    const challenge=index>0&&index>=total-2;
     const similarTiles={ng:['n','m'],sh:['ch','s'],ch:['sh','tch'],th:['f','d'],ph:['f','sh'],
       ck:['k','c'],tch:['ch','sh'],dge:['j','g'],ff:['f','ss'],ll:['l','ss'],ss:['s','ff']};
     const nearby=correct.flatMap(tile=>similarTiles[tile]??
       (tile.endsWith('_e')?[tile[0],...['a_e','e_e','i_e','o_e','u_e']]:[...(similarLetters[tile]??'')]));
     const distractors=shuffle([...new Set([...nearby,...correct.filter(isVowelTile).flatMap(()=>['a','e','i','o','u'])])]
-      .filter(tile=>!correct.includes(tile)),rng).slice(0,level.rank+2);
+      .filter(tile=>!correct.includes(tile)),rng).slice(0,challenge?level.rank+1:0);
     const tiles=shuffle([...new Set([...correct,...distractors])],rng);
     return {...base,prompt:'Say the sounds. Tap the tiles in order.',correct,tiles,audio:true};
   }
   if (mode==='spell') {
-    const missing=level.rank===0?spellingContrast(e):{mask:null,answer:e.word};
-    const correct=missing.answer.replace('_','').toLowerCase();
+    const warmup=index<2;
+    const clue=spellingContrast(e);
+    const mask=warmup?clue.mask:null;
+    const correct=(warmup?clue.answer:e.word).replace('_','').toLowerCase();
     const alphabet=[...'abcdefghijklmnopqrstuvwxyz'];
-    const clueLetters=level.rank===1?spellingContrast(e):missing;
-    const orderedLetters=[...new Set([...(clueLetters.answer.replace('_','')),...correct])];
-    const choices=[...new Set([...correct,...(clueLetters.other??''),...orderedLetters.flatMap(letter=>[...(similarLetters[letter]??'')])])];
-    const count=missing.other?2:level.rank===0?new Set(correct).size+2:new Set(correct).size+4;
-    const letters=level.rank===2?alphabet:shuffle(choices.slice(0,count),rng);
-    return {...base,prompt:missing.mask?'Listen. Fill in the missing letters.':'Listen. Tap the letters to spell it.',mask:missing.mask,correct,letters,audio:true};
+    const near=[...(clue.other??''),...[...correct].flatMap(letter=>[...(similarLetters[letter]??'')])];
+    const choices=[...new Set([...correct,...near,...shuffle(alphabet,rng)])];
+    const finale=index>=total-2;
+    const extras=warmup?(clue.other?1:2):4+2*level.rank+(finale?4+2*level.rank:0);
+    const letters=!warmup&&finale&&level.rank===2?alphabet:
+      shuffle(choices.slice(0,new Set(correct).size+extras),rng);
+    return {...base,prompt:mask?'Listen. Fill in the missing letters.':'Listen. Tap the letters to spell it.',mask,correct,letters,audio:true};
   }
   if (mode==='flight') {
     return {...base,prompt:'Hear the word. Catch it!',correct:e.word,options:flightOptions(e,own,rng),audio:true};
@@ -299,7 +308,7 @@ export function createRound({book, mode, level, group='all', review},rng=Math.ra
   const chosen=mode==='flight'&&!review&&selected.length
     ? Array.from({length:5},(_,i)=>selected[i%selected.length])
     : selected.slice(0,review?selected.length:settings.count);
-  return chosen.map(e=>question(mode,book,e,all,settings,rng,group));
+  return chosen.map((e,index)=>question(mode,book,e,all,settings,rng,group,index,chosen.length));
 }
 
 export const uiPattern = key => key.includes('_') ? key.replace('_',' · ') : choiceLabel(key);
