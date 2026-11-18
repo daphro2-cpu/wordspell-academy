@@ -8,7 +8,7 @@ export const missions = {
     win:'A new plank clicks into place!', miss:'That plank won’t fit yet.', reward:['plank placed','planks placed'], glyph:'▰',
   },
   segment: {
-    guide:'Pip the potion maker', objective:'Brew a sound potion', intro:'Help me hatch this egg! Say the word slowly. Add one drop for each sound you hear.',
+    guide:'Pip the potion maker', objective:'Brew a sound potion', intro:'Help me hatch this egg! Say the word slowly. Tap a tile for each sound, then pour your mix!',
     win:'The pot is bubbling!', miss:'Try that mix again.', reward:['mix added','mixes added'], glyph:'●',
   },
   spell: {

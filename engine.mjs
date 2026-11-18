@@ -1,4 +1,4 @@
-import {bookWords, labels} from './bank.mjs?v=forge-workbench';
+import {bookWords, labels} from './bank.mjs?v=sound-tiles';
 
 export const modes = [
   {id:'listen', title:'Echo Tower', skill:'Hear & identify', description:'Listen closely and choose the sound you hear.', icon:'◖))', color:'mint'},
@@ -250,7 +250,15 @@ function question(mode,book,e,all,level,rng,group) {
   }
   if (mode==='blend') return {...base,prompt:'Spin. Say the sounds. Read the word.',correct:e.word};
   if (mode==='segment') {
-    return {...base,prompt:'Say the sounds apart.',correct:e.tiles.length,audio:true};
+    const correct=e.tiles;
+    const similarTiles={ng:['n','m'],sh:['ch','s'],ch:['sh','tch'],th:['f','d'],ph:['f','sh'],
+      ck:['k','c'],tch:['ch','sh'],dge:['j','g'],ff:['f','ss'],ll:['l','ss'],ss:['s','ff']};
+    const nearby=correct.flatMap(tile=>similarTiles[tile]??
+      (tile.endsWith('_e')?[tile[0],...['a_e','e_e','i_e','o_e','u_e']]:[...(similarLetters[tile]??'')]));
+    const distractors=shuffle([...new Set([...nearby,...correct.filter(isVowelTile).flatMap(()=>['a','e','i','o','u'])])]
+      .filter(tile=>!correct.includes(tile)),rng).slice(0,level.rank+2);
+    const tiles=shuffle([...new Set([...correct,...distractors])],rng);
+    return {...base,prompt:'Say the sounds. Tap the tiles in order.',correct,tiles,audio:true};
   }
   if (mode==='spell') {
     const missing=level.rank===0?spellingContrast(e):{mask:null,answer:e.word};

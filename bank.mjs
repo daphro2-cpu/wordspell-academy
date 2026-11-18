@@ -200,7 +200,7 @@ stove|s t o_e v|st|The soup is on the ___.
 stripe|s t r i_e p|str|The shirt has a blue ___.
 street|s t r ee t|str|Cross the ___ at the crosswalk.
 scrape|s c r a_e p|scr|___ the ice off the window.
-spruce|s p r u_e ce|spr|A ___ is an evergreen tree.`,
+spruce|s p r u_e c|spr|A ___ is an evergreen tree.`,
     y:`yes|y e s|y-head|Say ___ if you agree.
 yell|y e ll|y-head|Please do not ___ in the library.
 yard|y ar d|y-head|We played in the back ___.

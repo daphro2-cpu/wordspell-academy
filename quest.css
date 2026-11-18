@@ -365,13 +365,7 @@ body::before{opacity:.22}
 @keyframes forge-hit{0%{opacity:0;transform:translateY(-14px) rotate(-35deg)}35%{opacity:1;transform:rotate(-30deg)}51%{opacity:1;transform:translate(-22px,32px) rotate(35deg)}100%{opacity:0;transform:translateY(-12px) rotate(-20deg)}}
 @keyframes forge-spark{0%{opacity:0;transform:scale(.5)}35%{opacity:1}100%{opacity:0;transform:translateY(-16px) scale(1.25)}}
 @keyframes forge-blade{from{width:var(--prior)}to{width:var(--forged)}}
-.potion-steps{display:flex;flex-wrap:wrap;gap:6px 24px;padding-left:24px;color:#fff1cc;font-weight:700}
-.potion-demo .demo-sounds{display:flex;gap:6px;margin:6px 0}
-.demo-sounds span{display:grid;place-items:center;width:34px;height:36px;background:#ffedc3;color:#35274b;border-radius:8px;font-size:1.14rem;font-weight:800}
-.sound-drops{display:flex;gap:8px;min-height:22px;margin:8px 0}
-.sound-drops span{width:19px;height:19px;transform:rotate(-45deg);border-radius:60% 5% 60% 60%;background:linear-gradient(#ccffff,#4dd9c9);border:1px solid #e5fff9;box-shadow:0 0 8px #71e8d780}
-.sound-drops span:last-child{animation:rise .25s ease-out}
-@media(prefers-reduced-motion:reduce){.hammering .forge-hammer,.hammering .forge-sparks,.hammering .sword-blade::after,.sound-drops span:last-child{animation:none}}
+@media(prefers-reduced-motion:reduce){.hammering .forge-hammer,.hammering .forge-sparks,.hammering .sword-blade::after{animation:none}}
 
 .story-clue{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;color:#ffecb5;margin:10px 0}
 .story-clue strong{font-size:1.25rem}
@@ -413,3 +407,18 @@ body::before{opacity:.22}
 .flying-tag .flying-object{width:42px;height:36px;border-radius:5px;object-fit:contain;filter:none}
 .flying-tag .flight-picture-icon{font-size:1.18rem;line-height:1.1}
 @media(max-width:480px){.flying-tag .flying-object{width:35px;height:31px}}
+
+.voice-meter{display:grid;grid-template-columns:auto minmax(100px,260px);align-items:center;gap:10px;margin-top:12px;font-weight:750;color:#fff1cc}
+.voice-meter meter{appearance:none;width:100%;height:1.2rem;border:0;border-radius:9px;background:#251d39;accent-color:#f9d988}
+.voice-meter meter::-webkit-meter-bar{height:100%;background:#251d39;border:1px solid #aa8d70;border-radius:9px}
+.voice-meter meter::-webkit-meter-optimum-value{border-radius:8px;background:#f9d988}
+.voice-meter meter::-moz-meter-bar{border-radius:8px;background:#f9d988}
+.voice-meter.heard meter::-webkit-meter-optimum-value{background:#a7e2a2}
+.voice-meter.heard meter::-moz-meter-bar{background:#a7e2a2}
+.potion-instructions{color:#fff1cc;font-weight:750}
+.potion-slots,.potion-bank{display:flex;flex-wrap:wrap;gap:8px}
+.potion-slots{list-style:none;padding:0;margin:12px 0}
+.scene-segment .potion-slots li{display:grid;place-items:center;min-width:48px;min-height:52px;padding:4px 9px;border:2px dashed #91b0be;border-radius:12px;background:#182a3a;color:#d2e4e9;font-size:1.55rem;font-weight:850}
+.scene-segment .potion-slots .filled{border-style:solid;border-color:#a3f1dd;background:#a8e0cf;color:#142c2d}
+.scene-segment .potion-slots .vowel{border-color:#ebc270;background:#ffedb8;color:#30213f}
+.potion-bank .tile{min-width:48px;min-height:48px}
