@@ -188,6 +188,7 @@ body::before{opacity:.22}
 .story-scroll p{font-size:clamp(21px,3.2vw,31px);line-height:1.45;margin:5px 0}
 .story-scroll p.reading{background:#fce2a2;border-radius:5px}
 .ink-blank{color:#6b4b7c;text-shadow:0 0 8px #b795c6}
+.ink-blank-next{display:inline-block;padding:0 .16em;border-radius:5px;background:#ffda81;color:#43243f;text-shadow:none;outline:2px solid #a96f30;outline-offset:1px}
 .story-status{min-height:1.4em;color:#ffebaa;font-weight:800}
 @media(prefers-reduced-motion:reduce){.word-reels.spinning span,.bridge-deck .bridge-track .fresh,.cauldron.brewing i,.dragon-hatch{animation:none!important}}
 

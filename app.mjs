@@ -2,7 +2,7 @@ import {catalog} from './bank.mjs?v=book2-textbook';
 import {modes,levels,createRound,sortingBoard,practiceContrasts,shuffle,choiceLabel,isVowelTile} from './engine.mjs?v=book2-textbook';
 
 import {missions,flightMission} from './missions.mjs?v=listen-sort';
-import {makeStory} from './story.mjs?v=sled-story';
+import {makeStory} from './story.mjs?v=story-levels';
 import {reviewPicture} from './review.mjs?v=flight-pictures';
 
 const by=id=>document.getElementById(id);
@@ -506,9 +506,17 @@ function catchFlyingWord(button,word){
   }
   queueFlightWord();
 }
+function nextStoryTarget(page,found){
+  return page.ordered?page.targets.find(word=>!found.has(word)):undefined;
+}
 function restoredText(page,found) {
-  return esc(page.sentence).replace(/\{([^}]+)\}/g,(_,word)=>found.has(word.toLowerCase())
-    ? '<strong class="sentence-insert">'+word+'</strong>' : '<span class="ink-blank" aria-label="missing word">___</span>');
+  const next=nextStoryTarget(page,found);
+  return esc(page.sentence).replace(/\{([^}]+)\}/g,(_,word)=>{
+    const key=word.toLowerCase();
+    if(found.has(key))return '<strong class="sentence-insert">'+word+'</strong>';
+    return key===next?'<span class="ink-blank ink-blank-next" aria-label="Fill this blank next">___</span>':
+      '<span class="ink-blank" aria-label="missing word">___</span>';
+  });
 }
 function storyIllustration(page){
   if(page.art)return '<img class="story-art" src="./assets/story-'+esc(page.art)+'.webp" alt="'+esc(page.imageAlt)+'">';
@@ -527,7 +535,7 @@ function storyView(mission) {
     ? `<h2>You brought the words back!</h2><div class="story-scroll">${active.questions.map(page=>'<figure class="restored-page">'+storyIllustration(page)+'<p>'+restoredText(page,new Set(page.targets))+'</p></figure>').join('')}</div>
       <div class="play-actions"><button class="primary" data-action="readStory" type="button">Read with me</button><button class="quiet" data-action="replay" type="button">Play again</button></div><p id="story-read-note" role="status"></p>${wordReview(active.questions.flatMap(page=>page.targets.map(word=>({word}))),true)}`
     : `<h2>${esc(q.clue)}</h2>${q.anchor?`<div class="story-clue"><strong>Example word: ${esc(q.anchor)}</strong>${audioButton(q.anchor,'Hear the example')}</div>`:''}
-      <p class="story-directions">${q.anchor?'Use the example to help you. ':''}${q.anchor&&q.middle&&!q.matchSpelling?'Read the choices. Tap the words with the same sound in the middle.':'Read the choices. Tap the words that match the clue.'} The words you tap go in the blanks.</p>
+      <p class="story-directions">${q.ordered?'Tap the word that fits the highlighted blank. Some choices match the sound clue but don’t fit the story.':(q.anchor?'Use the example to help you. ':'')+(q.anchor&&q.middle&&!q.matchSpelling?'Read the choices. Tap the words with the same sound in the middle.':'Read the choices. Tap the words that match the clue.')+' The words you tap go in the blanks.'}</p>
       <div class="story-scroll"><figure class="restored-page">${storyIllustration(q)}<p>${restoredText(q,active.found)}</p></figure></div>
       <div class="choices story-words" role="group" aria-label="Words to find">${q.options.map(word=>'<button class="option'+(active.found.has(word)?' correct':'')+'" type="button" data-story-word="'+esc(word)+'" '+(active.found.has(word)||complete?'disabled':'')+'>'+esc(word)+'</button>').join('')}</div>
       <p role="status" class="story-status">${esc(active.storyMessage||active.found.size+' of '+q.targets.length+' words found')}</p>
@@ -544,11 +552,14 @@ function storyPuzzle(){
 }
 function catchWord(word) {
   const q=question();
-  if(q.targets.includes(word)) {
+  const next=nextStoryTarget(q,active.found);
+  if(active.found.has(word)||active.found.size===q.targets.length)return;
+  if(q.ordered?word===next:q.targets.includes(word)) {
     active.found.add(word);
     active.storyMessage=active.found.size===q.targets.length?'You found all the words!':'You found '+active.found.size+' of '+q.targets.length+' words.';
   } else {
-    active.storyMessage=q.middle?'Try again. Say the word and listen to its middle sound.':'Try again. Read the word and look for the clue pattern.';
+    active.storyMessage=q.ordered?'Read the sentence and look at the picture. Which word fits this blank?':
+      q.middle?'Try again. Say the word and listen to its middle sound.':'Try again. Read the word and look for the clue pattern.';
   }
   render();
   (play.querySelector('[data-action=storyNext]')??[...play.querySelectorAll('[data-story-word]:enabled')].find(el=>el.dataset.storyWord===word)??play.querySelector('[data-story-word]:enabled'))?.focus({preventScroll:true});

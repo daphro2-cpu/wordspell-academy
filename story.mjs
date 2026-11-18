@@ -2,18 +2,18 @@ import {bookWords} from './bank.mjs?v=book2-textbook';
 import {choiceLabel, matchFocus, shuffle} from './engine.mjs?v=book2-textbook';
 
 const mixedStory=[
-  {sentence:'A {cat} sat on a {mat}.', art:'cat-mat', imageAlt:'An orange cat sits on a mat.', anchor:'map', middle:true, clue:'Find 2 short a words.', targets:['cat','mat'], decoys:['bed','pin','cup']},
-  {sentence:'{Ben} got a {red} {pen} to draw the cat.', art:'ben-pen', imageAlt:'Ben picks up a red pen beside the cat.', anchor:'bed', middle:true, clue:'Find 3 short e words.', targets:['ben','red','pen'], decoys:['map','pig','sun']},
-  {sentence:'Ben saw a {cake} by the {gate}.', art:'cake-gate', imageAlt:'Ben sees a cake beside a gate.', anchor:'tape', middle:true, clue:'Find 2 long a words.', targets:['cake','gate'], decoys:['cap','cot','cut']},
+  {sentence:'A {cat} sat on a {mat}.', art:'cat-mat', imageAlt:'An orange cat sits on a mat.', anchor:'map', middle:true, clue:'Find 2 short a words.', targets:['cat','mat'], decoys:['bed','pin','cup'], extra:'pot', tricky:'sat'},
+  {sentence:'{Ben} got a {red} {pen} to draw the cat.', art:'ben-pen', imageAlt:'Ben picks up a red pen beside the cat.', anchor:'bed', middle:true, clue:'Find 3 short e words.', targets:['ben','red','pen'], decoys:['map','pig','sun'], extra:'hat', tricky:'met'},
+  {sentence:'Ben saw a {cake} by the {gate}.', art:'cake-gate', imageAlt:'Ben sees a cake beside a gate.', anchor:'tape', middle:true, clue:'Find 2 long a words.', targets:['cake','gate'], decoys:['cap','cot','cut'], extra:'kit', tricky:'made'},
 ];
 const shortStory=[
   ...mixedStory.slice(0,2),
-  {sentence:'A {pig} came to {sit} with the cat.', art:'pig-sit', imageAlt:'A pig sits with the cat.', anchor:'pin', middle:true, clue:'Find 2 short i words.', targets:['pig','sit'], decoys:['map','pot','sun']},
+  {sentence:'A {pig} came to {sit} with the cat.', art:'pig-sit', imageAlt:'A pig sits with the cat.', anchor:'pin', middle:true, clue:'Find 2 short i words.', targets:['pig','sit'], decoys:['map','pot','sun'], extra:'pen', tricky:'big'},
 ];
 const magicStory=[
-  {sentence:'Gigi got a {cake} and some {tape} for a party.', art:'cake-tape', imageAlt:'Gigi has a birthday cake and a roll of tape.', anchor:'gate', middle:true, matchSpelling:true, clue:'Find 2 a space e words.', targets:['cake','tape'], decoys:['bell','home','cube']},
-  {sentence:'She put a {kite} by the {slide}.', art:'kite-slide', imageAlt:'Gigi puts a kite next to a slide.', anchor:'bike', middle:true, matchSpelling:true, clue:'Find 2 i space e words.', targets:['kite','slide'], decoys:['cake','rope','bell']},
-  {sentence:'She took a {note} {home}.', art:'note-home', imageAlt:'Gigi takes a folded note to her house.', anchor:'rope', middle:true, matchSpelling:true, clue:'Find 2 o space e words.', targets:['note','home'], decoys:['kite','cup','tape']},
+  {sentence:'Gigi got a {cake} and some {tape} for a party.', art:'cake-tape', imageAlt:'Gigi has a birthday cake and a roll of tape.', anchor:'gate', middle:true, matchSpelling:true, clue:'Find 2 a space e words.', targets:['cake','tape'], decoys:['bell','home','cube'], extra:'bike', tricky:'made'},
+  {sentence:'She put a {kite} by the {slide}.', art:'kite-slide', imageAlt:'Gigi puts a kite next to a slide.', anchor:'bike', middle:true, matchSpelling:true, clue:'Find 2 i space e words.', targets:['kite','slide'], decoys:['cake','rope','bell'], extra:'bone', tricky:'time'},
+  {sentence:'She took a {note} {home}.', art:'note-home', imageAlt:'Gigi takes a folded note to her house.', anchor:'rope', middle:true, matchSpelling:true, clue:'Find 2 o space e words.', targets:['note','home'], decoys:['kite','cup','tape'], extra:'bell', tricky:'rode'},
 ];
 
 const sledStory=[
@@ -24,10 +24,18 @@ const sledStory=[
   {sentence:'Gigi used a {clip} to put the flag back. Juniper began to {clap}.', pattern:'cl', targets:['clip','clap'], imageAlt:'Gigi clips the flag onto its pole while Juniper claps.'},
 ];
 
+function illustratedStory(pages,level){
+  return pages.map(({extra,tricky,...page})=>({
+    ...page,
+    ordered:level==='difficult',
+    decoys:level==='difficult'?[...page.decoys,extra,tricky]:page.decoys.slice(0,level==='medium'?3:2),
+  }));
+}
+
 export function makeStory({book,group,level}) {
-  if (book===1 && group==='all') return mixedStory;
-  if (book===1 && group==='vowels') return shortStory;
-  if (book===2 && group==='magic') return magicStory;
+  if (book===1 && group==='all') return illustratedStory(mixedStory,level);
+  if (book===1 && group==='vowels') return illustratedStory(shortStory,level);
+  if (book===2 && group==='magic') return illustratedStory(magicStory,level);
   const pageCount=level==='simple'?3:level==='medium'?4:5;
   if(book===3&&group==='two'){
     return sledStory.slice(0,pageCount).map((page,index)=>({
