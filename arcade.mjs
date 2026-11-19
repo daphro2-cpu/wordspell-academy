@@ -1,3 +1,4 @@
+import {bindFlashlightInput} from './flashlight-input.mjs?v=touch7';
 import {cueFor} from './sound-cues.mjs?v=pace6';
 import {createBookReader} from './book-reading.mjs?v=teacher5';
 import {playVoiceSuccess} from './effects.mjs?v=arcade1';
@@ -93,7 +94,7 @@ export function mountArcade({getSettings,enter,exit,speak,stopSpeech}){
       const topic=q.focusLabel??(current.kind==='spelling'?labelPattern(q.topic):labelSound(q.topic));
       const spokenCue=cueFor(q,current.game,current.kind);
       const prompt=q.prompt??(current.game==='mole'&&current.kind==='sound'?spokenCue.label:current.game==='mole'?'Which word has a different '+(current.kind==='spelling'?'spelling pattern?':q.position==='middle'||q.position==='vowel'?'vowel sound?':q.position==='final y'?'sound for final y?':q.position==='anywhere'?'target sound?':q.position+' sound?'):'Find every word with '+topic+'.');
-      const clue=q.clue??(current.game==='mole'&&current.kind==='sound'?'Whack all the matches. Leave the other sounds alone.':current.game==='mole'?'The others '+(current.kind==='spelling'?'use '+topic+'.':(q.position==='vowel'?'have the '+topic+' sound.':q.position==='middle'?'have '+topic+' in the middle.':q.position==='final y'?'have '+topic+'.':q.position==='anywhere'?'contain the '+topic+' sound.':'have '+topic+' at the '+q.position+'.')):'Move the light to reveal a word. It goes dark when the beam moves away. Tap every match.');
+      const clue=q.clue??(current.game==='mole'&&current.kind==='sound'?'Whack all the matches. Leave the other sounds alone.':current.game==='mole'?'The others '+(current.kind==='spelling'?'use '+topic+'.':(q.position==='vowel'?'have the '+topic+' sound.':q.position==='middle'?'have '+topic+' in the middle.':q.position==='final y'?'have '+topic+'.':q.position==='anywhere'?'contain the '+topic+' sound.':'have '+topic+' at the '+q.position+'.')):'Touch or drag to move your light. Lift your finger to read. Tap a matching word to collect it.');
       const canNext=current.phase==='cleared';
       const columns=current.game==='flashlight'?Math.ceil(q.options.length/2):q.options.length;
       content='<div class="arcade-instructions"><strong class="mode-badge">'+(current.kind==='sound'?'SOUND · Compare what you hear':'SPELLING · Compare the written letters')+'</strong><h2>'+esc(prompt)+'</h2><p>'+esc(clue)+'</p>'+(current.game==='mole'?'<p class="pop-instruction">Watch the holes. Whack every matching word. Missed moles come back!</p>':'')+'</div><div class="arcade-toolbar"><button type="button" class="quiet" data-arcade-action="pause">'+(current.paused?'Resume':'Pause')+'</button><button type="button" class="quiet" data-arcade-action="music">♫ Music '+(current.music?'on':'off')+'</button><button type="button" class="quiet" data-arcade-action="help">Help me compare</button><span>Round '+Math.min(current.round+1,current.total)+' of '+current.total+(current.game==='mole'&&current.kind==='sound'&&current.task==='all'?' · Set '+(current.wave+1)+' of 3':'')+'</span>'+(current.timed?'<span class="arcade-clock" role="timer">Time <b>'+Math.ceil(current.remaining/1000)+'</b> s</span>':'')+'</div><div class="arcade-field '+current.game+' '+(current.paused?'paused':'')+' '+(canNext?'cleared':'')+' '+(current.phase==='expired'?'expired':'')+'" style="--beam-x:50%;--beam-y:50%;--columns:'+columns+'" aria-label="'+(current.game==='mole'?'Mole garden':'Explore the library with your flashlight')+'">'+
@@ -175,15 +176,14 @@ export function mountArcade({getSettings,enter,exit,speak,stopSpeech}){
     field.querySelectorAll('[data-arcade-word]').forEach(b=>b.classList.toggle('discovered',b===button));
     current.revealed=new Set([current.question.options[Number(button.dataset.arcadeWord)].word]);
   }
-  host.addEventListener('pointermove',event=>{
-    if(current?.game!=='flashlight'||current.phase!=='playing'||current.paused)return;
-    const field=event.target.closest('.arcade-field');
-    if(!field)return;
+  const flashlightInput=bindFlashlightInput(host,{
+   active:()=>current?.game==='flashlight'&&current.phase==='playing'&&!current.paused,
+   move:(event,field)=>{
     const rect=field.getBoundingClientRect(),x=event.clientX-rect.x,y=event.clientY-rect.y;
     field.style.setProperty('--beam-x',x+'px');field.style.setProperty('--beam-y',y+'px');
     const fox=field.querySelector('.fox-walker');
-    fox.style.left=Math.max(2,Math.min(80,x/rect.width*100))+'%';
-    fox.classList.add('walking');clearTimeout(foxTimer);foxTimer=setTimeout(()=>fox.classList.remove('walking'),300);
+    if(fox)fox.style.left=Math.max(2,Math.min(80,x/rect.width*100))+'%';
+    if(fox){fox.classList.add('walking');clearTimeout(foxTimer);foxTimer=setTimeout(()=>fox.classList.remove('walking'),300);}
     current.revealed.clear();
     field.querySelectorAll('[data-arcade-word]').forEach(button=>{
       const r=button.getBoundingClientRect();
@@ -194,12 +194,12 @@ export function mountArcade({getSettings,enter,exit,speak,stopSpeech}){
         button.classList.add('discovered');
       }
     });
-  });
-  host.addEventListener('pointerleave',()=>{
-    if(current?.game!=='flashlight')return;
+   },
+   leave:()=>{
     current.revealed.clear();
     host.querySelectorAll('.discovered').forEach(b=>b.classList.remove('discovered'));
     const field=host.querySelector('.arcade-field');field?.style.setProperty('--beam-x','-300px');
+   }
   });
   host.addEventListener('change',event=>{
     if(!current)return;
@@ -231,6 +231,7 @@ export function mountArcade({getSettings,enter,exit,speak,stopSpeech}){
   }
   host.addEventListener('click',event=>{
     if(!current)return;
+    if(flashlightInput.ignoreClick(event)){event.preventDefault();return;}
     const model=event.target.closest('[data-review-model]');
     if(model&&current.phase==='done'){const word=[...new Set(current.collected)][Number(model.dataset.reviewModel)];if(clipWords.has(word))speak(word);return;}
     const wordButton=event.target.closest('[data-arcade-word]');
