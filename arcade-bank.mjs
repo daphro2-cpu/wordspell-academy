@@ -1,5 +1,5 @@
 import {soundContrasts,contrastFor,targetCategory,spellingCategory} from './arcade-focus.mjs?v=focus2';
-import {ruleTopics,ruleQuestion} from './arcade-rules.mjs?v=reading3';
+import {ruleTopics,ruleQuestion} from './arcade-rules.mjs?v=jrules10';
 import {bookWords} from './bank.mjs?v=arcade1';
 
 const soundNames={
