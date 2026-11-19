@@ -1,3 +1,4 @@
+import {fitBookLabels,watchBookLabels} from './book-labels.mjs?v=labels9';
 import {bindFlashlightInput} from './flashlight-input.mjs?v=touch7';
 import {cueFor} from './sound-cues.mjs?v=pace6';
 import {createBookReader} from './book-reading.mjs?v=voice8';
@@ -10,7 +11,7 @@ const music=new Audio('./audio/warm-magic.mp3');
 music.loop=true;music.volume=.1;
 const effect=new Audio();
 effect.volume=.36;
-let current,clock,foxTimer,bookReader;
+let current,clock,foxTimer,bookReader,stopFittingBooks;
 const roundVoice=new Audio();roundVoice.volume=.9;let announcement=0;
 const memory=new Map();
 function readMemory(key){
@@ -43,6 +44,7 @@ function setMusic(){
   else music.pause();
 }
 function cleanup(){
+  stopFittingBooks?.();stopFittingBooks=null;
   clearInterval(clock);clearTimeout(foxTimer);music.pause();effect.pause();announcement++;roundVoice.pause();roundVoice.onended=null;bookReader?.stop();
 }
 function stop(){
@@ -112,6 +114,8 @@ export function mountArcade({getSettings,enter,exit,speak,stopSpeech}){
     host.querySelectorAll('[data-arcade-word]').forEach(button=>{
       button.addEventListener('focus',()=>reveal(button));
     });
+    stopFittingBooks?.();stopFittingBooks=null;
+    if(current.phase==='done'||current.game==='flashlight')stopFittingBooks=watchBookLabels(host);
     updateMoles();setMusic();
   }
   function updateMoles(){
@@ -215,7 +219,7 @@ export function mountArcade({getSettings,enter,exit,speak,stopSpeech}){
     const state=current,words=[...new Set(state.collected)],index=words.findIndex(w=>!state.readWords.has(w));if(index<0)return;
     state.bookFlying=true;const word=words[index],book=host.querySelector('[data-review-book="'+index+'"]'),slot=host.querySelector('[data-shelf-slot="'+index+'"]');
     const from=book.getBoundingClientRect(),to=slot.getBoundingClientRect();book.style.setProperty('--fly-x',(to.x+to.width/2-from.x-from.width/2)+'px');book.style.setProperty('--fly-y',(to.y+to.height/2-from.y-from.height/2)+'px');book.classList.add('is-lit','is-flying');fx(true);
-    setTimeout(()=>{if(current!==state)return;state.readWords.add(word);book.classList.remove('is-flying','is-current');book.classList.add('is-returned');slot.innerHTML='<span class="shelved-book" style="--book-x:'+(index%3)*50+'%;--book-y:'+Math.floor(index%6/3)*100+'%"><strong>'+esc(word)+'</strong></span>';state.bookFlying=false;state.bookQuietUntil=performance.now()+700;bookReader.reset();
+    setTimeout(()=>{if(current!==state)return;state.readWords.add(word);book.classList.remove('is-flying','is-current');book.classList.add('is-returned');slot.innerHTML='<span class="shelved-book" style="--book-x:'+(index%3)*50+'%;--book-y:'+Math.floor(index%6/3)*100+'%"><strong>'+esc(word)+'</strong></span>';fitBookLabels(host);state.bookFlying=false;state.bookQuietUntil=performance.now()+700;bookReader.reset();
       const next=words.findIndex(w=>!state.readWords.has(w)),done=next<0;host.querySelector('#book-read-status').textContent=done?'Every book is home! Wonderful reading!':state.readWords.size+' of '+words.length+' books returned';host.querySelector('#current-read-word').textContent=done?'All books are home!':'Read aloud: '+words[next];
       if(done){bookReader.stop();host.querySelector('[data-arcade-action="bookConfirm"]').disabled=true;host.querySelector('[data-arcade-action="bookMic"]').disabled=true;host.querySelector('[data-arcade-action="bookTeacher"]').disabled=true;playVoiceSuccess();host.querySelector('.book-review').classList.add('all-lit');host.querySelector('#book-mic-status').textContent='You sent every book home!';}else host.querySelector('[data-review-book="'+next+'"]').classList.add('is-current');
     },1000);

@@ -111,7 +111,7 @@
 .review-book-slot{position:relative;padding-bottom:12px;text-align:center;min-width:0}
 .review-book-slot:after{content:'';position:absolute;left:0;right:0;bottom:0;height:12px;background:linear-gradient(#cba779 0 20%,#80522f 22% 50%,#49311f);box-shadow:0 6px 10px #09070dbb;border-radius:2px}
 .review-book{position:relative;display:block;isolation:isolate;width:100%;max-width:215px;aspect-ratio:1;margin:0 auto;padding:0;background-image:url('./assets/review-magic-books.webp');background-size:300% 200%;background-position:var(--book-x) var(--book-y);background-color:transparent;border:0;border-radius:0;box-shadow:none;filter:brightness(.78);transition:filter .45s,transform .35s;cursor:pointer}
-.review-book strong{position:absolute;left:25%;width:54%;top:42%;translate:0 -50%;font:800 clamp(22px,calc(200px / var(--word-length)),39px)/1.1 var(--font);text-align:center;color:#342039;overflow-wrap:anywhere}
+.review-book strong{position:absolute;left:25%;width:54%;top:42%;translate:0 -50%;font:800 clamp(22px,calc(200px / var(--word-length)),39px)/1.1 var(--font);text-align:center;color:#342039;white-space:nowrap;overflow-wrap:normal;word-break:normal;hyphens:none}
 .review-book:hover,.review-book:focus-visible{filter:brightness(1.08);outline:3px solid #ffe3a0;outline-offset:-5px}
 .review-book.is-lit{filter:brightness(1.2) drop-shadow(0 0 12px #ffe5a2);transform:translateY(-3px)}
 .book-read-star{position:absolute;right:10%;top:3%;color:#fff3a7;text-shadow:0 0 14px #ffd575;font-size:32px;opacity:0;scale:.4;transition:opacity .3s,scale .3s}
@@ -159,3 +159,6 @@
 
 /* Whiteboard gestures move the beam instead of scrolling the game surface. */
 .arcade-field.flashlight,.arcade-field.flashlight .arcade-word{touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+
+/* Keep every book word intact; book-labels measures and reduces longer labels. */
+.review-book strong,.shelved-book strong,.flashlight .word-sign{white-space:nowrap;overflow-wrap:normal;word-break:normal;hyphens:none}
