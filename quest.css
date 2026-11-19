@@ -440,3 +440,8 @@ body::before{opacity:.22}
 .scene-segment .potion-slots .filled{border-style:solid;border-color:#a3f1dd;background:#a8e0cf;color:#142c2d}
 .scene-segment .potion-slots .vowel{border-color:#ebc270;background:#ffedb8;color:#30213f}
 .potion-bank .tile{min-width:48px;min-height:48px}
+
+.library-story-art{display:block;flex-shrink:0;aspect-ratio:1;background-image:url("./assets/story-library-panels.webp");background-size:300% 200%;background-repeat:no-repeat}
+.sound-door[data-sound-key="oll-short"] .door-leaf{background:repeating-linear-gradient(90deg,#865b3450 0 2px,transparent 2px 25%),linear-gradient(90deg,#c98e6d,#f4d6ac 55%,#b87d60)}
+.sound-door[data-sound-key="oll-long"] .door-leaf{background:repeating-linear-gradient(90deg,#344a6650 0 2px,transparent 2px 25%),linear-gradient(90deg,#799bab,#d2e8e7 55%,#7897a3)}
+.door-sound-title{display:block;font-size:clamp(22px,2.8vw,36px)}.door-leaf small{display:block;font-size:clamp(18px,2vw,27px);margin-top:8px}

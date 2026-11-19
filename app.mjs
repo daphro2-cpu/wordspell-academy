@@ -1,11 +1,11 @@
-import {resemblesWord} from './spoken-word.mjs?v=arcade1';
-import {mountArcade,registerArcadeClips} from './arcade.mjs?v=jrules10';
+import {VoiceHold,VOICE_GOAL,VOICE_HOLD_MS,voiceLevel} from './voice-hold.mjs?v=hold11';
+import {mountArcade,registerArcadeClips} from './arcade.mjs?v=hold11';
 import {playSpinSound,playReelStop,stopSpinSound,playVoiceSuccess} from './effects.mjs?v=arcade1';
-import {catalog} from './bank.mjs?v=arcade1';
-import {modes,levels,createRound,sortingBoard,practiceContrasts,shuffle,choiceLabel,isVowelTile} from './engine.mjs?v=arcade1';
+import {catalog} from './bank.mjs?v=experience12';
+import {modes,levels,createRound,sortingBoard,practiceContrasts,shuffle,choiceLabel,isVowelTile} from './engine.mjs?v=experience12';
 
 import {missions,flightMission} from './missions.mjs?v=listen-sort';
-import {makeStory} from './story.mjs?v=arcade1';
+import {makeStory} from './story.mjs?v=experience12';
 import {reviewPicture} from './review.mjs?v=word-clues';
 
 const by=id=>document.getElementById(id);
@@ -58,8 +58,7 @@ const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;
 const speech='speechSynthesis' in window?window.speechSynthesis:null;
 const AudioContextClass=window.AudioContext??window.webkitAudioContext;
 const canUseMic=Boolean(AudioContextClass&&navigator.mediaDevices?.getUserMedia);
-const loudEnough=.035;
-const voiceGoal=75;
+const voiceGoal=VOICE_GOAL;
 let mic;
 const voiceStorage='wordspell-voice-v2';
 let voicePreference='auto';
@@ -158,6 +157,8 @@ function say(word,preview=false,sortPrompt=false){
   speech.speak(clip);
 }
 function shown(key) {
+  if(key==='oll-short')return '<strong class="door-sound-title">short o /ɑ/</strong><small>as in doll</small>';
+  if(key==='oll-long')return '<strong class="door-sound-title">long o /oʊ/</strong><small>as in roll</small>';
   if(key==='th-voiced')return '<u>th</u>';
   if(key==='th-unvoiced')return 'th';
   if(key==='oo-long'||key==='oo as in moon'||key==='long oo as in moon'||key==='long oo') {
@@ -527,6 +528,7 @@ function restoredText(page,found) {
   });
 }
 function storyIllustration(page){
+  if(page.libraryPanel!==undefined){const i=page.libraryPanel;return '<span class="story-art library-story-art" role="img" aria-label="'+esc(page.imageAlt)+'" style="background-position:'+((i%3)*50)+'% '+(Math.floor(i/3)*100)+'%"></span>';}
   if(page.art)return '<img class="story-art" src="./assets/story-'+esc(page.art)+'.webp" alt="'+esc(page.imageAlt)+'">';
   if(page.sledPanel!==undefined){
     const x=page.sledPanel%3*50;
@@ -643,7 +645,7 @@ function options(q){
   const choices='<div class="choices" role="group" aria-label="Answer choices">'+q.options.map((key,i)=>{
     const open=active.verdict===true&&key===q.correct;
     const inside=open?'<span class="door-reveal" aria-hidden="true"><span>✦</span>'+esc(q.entry.word)+'</span>':'';
-    const pick='<button type="button" data-choice="'+i+'" class="option sound-door'+optionClass(key,q)+(open?' door-open':'')+'" '+(active.verdict===null?'':'disabled')+'>'+inside+'<span class="door-leaf">'+shown(key)+'</span></button>';
+    const pick='<button type="button" data-sound-key="'+esc(key)+'" data-choice="'+i+'" class="option sound-door'+optionClass(key,q)+(open?' door-open':'')+'" '+(active.verdict===null?'':'disabled')+'>'+inside+'<span class="door-leaf">'+shown(key)+'</span></button>';
     const example=showExamples&&exampleFor(i)?audioButton(q.samples[i],'Hear an example'):'';
     return '<div class="door-choice">'+pick+example+'</div>';
   }).join('')+'</div>';
@@ -693,7 +695,7 @@ function blend(q){
   return `<div class="reel-machine">
     <div class="word-reels" ${settled?'role="img" aria-label="'+esc(q.entry.word)+'"':'aria-hidden="true"'}>${chunks.map(reel).join('')}</div>
     <button class="spin-lever ${spinning?'pulled':''}" type="button" data-action="spin" aria-label="Pull the lever to spin" ${canSpin?'':'disabled'}><span class="lever-arm" aria-hidden="true"></span><span class="lever-copy">Pull</span></button>
-  </div>${controls}`;
+  </div>${canSpin?'<button class="quiet" type="button" data-action="readTeacher">'+(active.micUnavailable?'No microphone — teacher check active':'No microphone — teacher check')+'</button>':''}${controls}`;
 }
 function readControls(q){
   const ready=active.micReady;
@@ -702,11 +704,12 @@ function readControls(q){
   const next=active.index+1===active.questions.length?'Finish':'Next word';
   return `<div class="read-controls">
     ${fallback?'':`<div class="voice-meter ${ready?'heard':''}" style="--voice-goal:${voiceGoal}%">
-      <div class="voice-meter-top"><strong id="voice-meter-label">Voice power</strong><span>${ready?'✓ You did it!':'Aim for the star!'}</span></div>
-      <div class="voice-track"><meter id="voice-level" aria-labelledby="voice-meter-label" min="0" max="100" value="${ready?100:0}"></meter><span class="voice-goal" aria-hidden="true">★</span></div>
+      <div class="voice-meter-top"><strong id="voice-meter-label">Voice power</strong><span>${ready?'✓ You did it!':'Hold the star for 1.5 seconds'}</span></div>
+      <small id="voice-hold-time">0.0 / 1.5 seconds</small><div class="voice-track"><meter id="voice-level" aria-labelledby="voice-meter-label" min="0" max="100" value="${ready?100:0}"></meter><span class="voice-goal" aria-hidden="true">★</span></div>
     </div>`}
     <p class="mic-status ${ready?'voice-success':''}" role="status" tabindex="-1">${esc(status)}</p>
     ${fallback||ready?'':`<button class="quiet" type="button" data-action="${mic?'cancelMic':'readMic'}">${mic?'Stop mic':'Start mic'}</button>`}
+    ${ready?'':'<button class="quiet" type="button" data-action="readTeacher">'+(fallback?'No microphone — teacher check active':'No microphone — teacher check')+'</button>'}
     <div class="teacher-check" role="group" aria-label="Teacher check"><strong>Teacher check</strong>
       <button class="primary" type="button" data-action="readCorrect" ${ready||fallback?'':'disabled'}>${next} →</button>
       <button class="quiet" type="button" data-action="readAgain">Try again</button>${audioButton(q.entry.word,'Hear the word')}
@@ -715,87 +718,35 @@ function readControls(q){
 async function startMic(){
   if(!canUseMic||mic||!active.spin||active.verdict!==null||active.micReady||active.micUnavailable)return;
   stopSound();
-  const round=active;
-  const session={heard:false,matched:false};
-  mic=session;
+  const round=active,session={hold:new VoiceHold()};mic=session;
   round.micMessage='Allow the mic when your browser asks.';
-  if(round.spin===true){
-    render();
-    play.querySelector('.mic-status')?.focus({preventScroll:true});
-  }
-  try {
-    session.context=new AudioContextClass();
-    await session.context.resume();
-    if(mic!==session)return;
+  if(round.spin===true){render();play.querySelector('.mic-status')?.focus({preventScroll:true});}
+  try{
+    session.context=new AudioContextClass();await session.context.resume();if(mic!==session)return;
     const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:false}});
     if(mic!==session){stream.getTracks().forEach(track=>track.stop());return;}
     session.stream=stream;
-    const analyser=session.context.createAnalyser();
-    analyser.fftSize=2048;
+    const track=stream.getAudioTracks()[0];if(!track||track.readyState==='ended')throw new Error('No microphone');
+    track.addEventListener('ended',()=>{if(mic===session)micUnavailable(round);});
+    const analyser=session.context.createAnalyser();analyser.fftSize=2048;
     session.context.createMediaStreamSource(stream).connect(analyser);
-    const samples=new Float32Array(analyser.fftSize);
-    let heardSince=null;
+    const samples=new Float32Array(analyser.fftSize);let last=performance.now();
     const listen=now=>{
-      if(mic!==session)return;
-      if(round.spin!==true){
-        session.frame=requestAnimationFrame(listen);
-        return;
-      }
+      if(mic!==session||active!==round)return;
+      const dt=Math.min(80,Math.max(0,now-last));last=now;
       analyser.getFloatTimeDomainData(samples);
       const rms=Math.sqrt(samples.reduce((sum,value)=>sum+value*value,0)/samples.length);
-      const meter=by('voice-level');
-      if(meter)meter.value=Math.min(100,voiceGoal*rms/loudEnough);
-      heardSince=rms>=loudEnough?(heardSince??now):null;
-      if(heardSince!==null&&now-heardSince>=150){
-        session.heard=true;
-        if(session.matched){finishSpokenWord(round);return;}
-        const status=play.querySelector('.mic-status');
-        if(status&&!session.recognitionUnavailable)status.textContent='I can hear you! Say the whole word: '+question().entry.word+'.';
-      }
+      const eligible=round.spin===true&&!document.hidden&&track.readyState==='live'&&track.enabled&&!track.muted;
+      const level=eligible?voiceLevel(rms):0;
+      const meter=by('voice-level');if(meter)meter.value=level;
+      if(!eligible)session.hold.reset();
+      else if(session.hold.feed(level,dt)){finishSpokenWord(round);return;}
+      const progress=by('voice-hold-time');if(progress)progress.textContent=(session.hold.held/1000).toFixed(1)+' / '+(VOICE_HOLD_MS/1000)+' seconds';
       session.frame=requestAnimationFrame(listen);
     };
-    stream.getAudioTracks().forEach(track=>track.addEventListener('ended',()=>{
-      if(mic===session)micUnavailable(round);
-    }));
-    const Recognition=window.SpeechRecognition??window.webkitSpeechRecognition;
-    if(Recognition){
-      const recognizer=new Recognition();
-      session.recognizer=recognizer;
-      recognizer.lang='en-US';recognizer.interimResults=true;recognizer.continuous=true;recognizer.maxAlternatives=3;
-      recognizer.onresult=event=>{
-        if(mic!==session||active!==round)return;
-        const results=Array.from(event.results).slice(event.resultIndex);
-        const said=results.flatMap(result=>Array.from(result).map(a=>a.transcript));
-        if(said.some(text=>resemblesWord(text,question().entry.word))){
-          session.matched=true;
-          finishSpokenWord(round);
-        }else{
-          round.micMessage='I heard “'+said[0]?.trim()+'”. Try saying '+question().entry.word+' again.';
-          const status=play.querySelector('.mic-status');if(status)status.textContent=round.micMessage;
-        }
-      };
-      const fallback=()=>{
-        if(mic!==session)return;
-        session.recognitionUnavailable=true;
-        round.micUnavailable=true;
-        round.micMessage='Word checking is unavailable here. Teacher: listen to the whole word and confirm below.';
-        render();
-      };
-      recognizer.onerror=fallback;
-      recognizer.onend=()=>{if(mic===session&&!session.matched&&!session.recognitionUnavailable){try{recognizer.start();}catch{fallback();}}};
-      try{recognizer.start();}catch{fallback();}
-    }else{
-      session.recognitionUnavailable=true;round.micUnavailable=true;
-    }
-    round.micMessage=session.recognitionUnavailable?'Word checking is unavailable here. Teacher: listen to the whole word and confirm below.':'Say each sound, then read the whole word clearly.';
-    if(round.spin===true){
-      render();
-      play.querySelector('.mic-status')?.focus({preventScroll:true});
-    }
-    session.frame=requestAnimationFrame(listen);
-  } catch {
-    if(mic===session)micUnavailable(round);
-  }
+    round.micMessage='Read aloud. Keep your sound at the star for 1.5 seconds. Your teacher checks the reading.';
+    if(round.spin===true)render();session.frame=requestAnimationFrame(listen);
+  }catch{if(mic===session)micUnavailable(round);}
 }
 function finishSpokenWord(round){
   stopListening();
@@ -1175,6 +1126,11 @@ const actions={
     },motion?60+index*70:520+index*260));
   },
   readMic:startMic,
+  readTeacher:()=>{
+    stopListening();stopSound();active.micUnavailable=true;active.micReady=false;
+    active.micMessage='Teacher check: listen to the whole word, then press Next word or Finish if it is correct.';
+    render();focusOption('[data-action=readCorrect]');
+  },
   cancelMic:()=>{
     stopListening();
     active.micMessage='Listening stopped.';

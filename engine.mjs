@@ -1,4 +1,4 @@
-import {bookWords, labels} from './bank.mjs?v=arcade1';
+import {bookWords, labels} from './bank.mjs?v=experience12';
 
 export const modes = [
   {id:'listen', title:'Echo Tower', skill:'Hear & identify', description:'Listen closely and choose the sound you hear.', icon:'◖))', color:'mint'},

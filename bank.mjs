@@ -240,7 +240,7 @@ candy|c a n d y|y-e|We each ate one piece of ___.`,
 };
 const labels = {
   'th-unvoiced':'th as in thin','th-voiced':'th as in this',
-  'oll-long':'-oll as in roll','oll-short':'-oll as in doll','oo-long':'oo as in moon','oo-short':'oo as in book',
+  'oll-long':'long o /oʊ/ as in roll','oll-short':'short o /ɑ/ as in doll','oo-long':'oo as in moon','oo-short':'oo as in book',
   'y-head':'y as in yes','y-i':'y as in fly','y-e':'y as in happy',
 };
 const bookWords = Object.fromEntries(Object.entries(raw).map(([book, groups])=>[

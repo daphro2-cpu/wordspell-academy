@@ -1,5 +1,5 @@
-import {bookWords} from './bank.mjs?v=arcade1';
-import {choiceLabel, matchFocus, shuffle} from './engine.mjs?v=book2-textbook';
+import {bookWords} from './bank.mjs?v=experience12';
+import {choiceLabel, matchFocus, shuffle} from './engine.mjs?v=experience12';
 
 const mixedStory=[
   {sentence:'A {cat} sat on a {mat}.', art:'cat-mat', imageAlt:'An orange cat sits on a mat.', anchor:'map', middle:true, clue:'Find 2 short a words.', targets:['cat','mat'], decoys:['bed','pin','cup'], extra:'pot', tricky:'sat'},
@@ -70,8 +70,10 @@ export function makeStory({book,group,level}) {
       .filter(word=>word!==anchor?.toLowerCase()&&!targets.includes(word)&&!matching.some(e=>e.word.toLowerCase()===word));
     const label=matching[0].group==='vowels'?'short '+pattern:choiceLabel(pattern);
     const spelling=matching[0].group!=='vowels';
-    const soundLabel=pattern==='oo-long'?'long oo':pattern==='oo-short'?'short oo':label;
+    const soundLabel=pattern==='oo-long'?'long oo':pattern==='oo-short'?'short oo':pattern==='oll-long'?'long o (oll)':pattern==='oll-short'?'short o (oll)':label;
     return {
+      libraryPanel:index%5,
+      imageAlt:['Gigi discovers a parchment scroll in the library.','The friendly Word Monster writes magical clues on the wall.','A scroll glows as Gigi reads it aloud.','Gigi finds a clue in a magical book.','A library door opens when Gigi reads the clue.'][index%5],
       sentence:frame.replace('{A}',targets.map(word=>'“{'+word+'}”').join(targets.length===2?' and ':', ')),
       clue:spelling?'Find '+targets.length+' '+soundLabel+' '+(targets.length===1?'word.':'words.'):'Find '+targets.length+' '+label+' '+(targets.length===1?'word.':'words.'),
       pattern,
