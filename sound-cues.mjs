@@ -10,6 +10,10 @@ export function cueFor(question,game,kind){
  if(question.rule)return {files:['spelling'],label:question.prompt};
  const [label,example]=soundCues[question.targetSound??question.topic]??[question.focusLabel,question.options[0]?.word];
  if(game==='mole'&&question.task==='odd'){const pos=question.position;return {files:[pos==='end'||pos==='final y'?'odd-end':pos==='start'?'odd-start':pos==='middle'||pos==='vowel'?'odd-vowel':'odd-anywhere'],example,label:'Odd One Out: which word does NOT '+(pos==='end'?'end with':pos==='start'?'start with':'have')+' '+label+', as in '+example+'?'};}
+ if(game==='mole'&&['a','e'].includes(question.targetSound??question.topic)){
+  const sound=question.targetSound??question.topic;
+  return {files:[sound+'-clear'],example:null,label:'Whack every word that has '+label+', as in '+example+'.'};
+ }
  if(game==='mole'){
   const pos=question.position;
   const verb=pos==='end'||pos==='final y'?'ends with':pos==='start'?'starts with':'has';

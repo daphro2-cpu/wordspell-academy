@@ -1,4 +1,4 @@
-import {cueFor} from './sound-cues.mjs?v=reading3';
+import {cueFor} from './sound-cues.mjs?v=vowels4';
 import {createBookReader} from './book-reading.mjs?v=reading3';
 import {playVoiceSuccess} from './effects.mjs?v=arcade1';
 import {moleIsUp} from './burrow-state.mjs?v=burrows1';
