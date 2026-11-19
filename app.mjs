@@ -1,5 +1,5 @@
 import {resemblesWord} from './spoken-word.mjs?v=arcade1';
-import {mountArcade,registerArcadeClips} from './arcade.mjs?v=touch7';
+import {mountArcade,registerArcadeClips} from './arcade.mjs?v=voice8';
 import {playSpinSound,playReelStop,stopSpinSound,playVoiceSuccess} from './effects.mjs?v=arcade1';
 import {catalog} from './bank.mjs?v=arcade1';
 import {modes,levels,createRound,sortingBoard,practiceContrasts,shuffle,choiceLabel,isVowelTile} from './engine.mjs?v=arcade1';
