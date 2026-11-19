@@ -31,7 +31,7 @@ export function createBookReader({onLevel,onRead,onStatus}){
     frame=requestAnimationFrame(tick);
    }
    frame=requestAnimationFrame(tick);
-  }catch(error){stop();onStatus(error.name==='NotAllowedError'?'Microphone permission is needed. Allow it, then choose Start microphone.':'Microphone unavailable. Connect a microphone, then choose Start microphone.');}
+  }catch(error){stop();onStatus(error.name==='NotAllowedError'?'Microphone access was not allowed. Choose Teacher check — no microphone, or allow access and start the microphone.':'No microphone available. Choose Teacher check — no microphone to continue.');}
  }
  return {start,stop,reset:()=>turn.reset(),get listening(){return enabled;}};
 }
