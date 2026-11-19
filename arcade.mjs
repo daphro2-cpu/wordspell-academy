@@ -1,7 +1,7 @@
-import {availableTopics,buildArcadeQuestion,labelSound,labelPattern,practicePool} from './arcade-bank.mjs?v=arcade3';
+import {availableTopics,buildArcadeQuestion,labelSound,labelPattern,practicePool} from './arcade-bank.mjs?v=arcade4';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const shuffle=a=>[...a].sort(()=>Math.random()-.5);
-const music=new Audio('./audio/moonlit-tower.mp3');
+const music=new Audio('./audio/warm-magic.mp3');
 music.loop=true;music.volume=.1;
 const effect=new Audio();
 effect.volume=.36;
@@ -52,7 +52,7 @@ export function mountArcade({getSettings,enter,exit,speak,stopSpeech}){
     cleanup();enter();
     const settings=getSettings();
     current={...settings,game,kind:'sound',topic:null,phase:'setup',round:0,score:0,missed:[],retry:[],found:new Set(),revealed:new Set(),music:true,paused:false,timed:true,message:'',focusIndex:0};
-    const topics=availableTopics(current.book,current.kind);
+    const topics=availableTopics(current.book,current.kind,current.game);
     current.topic=topics[0]?.key;
     render();
     host.querySelector('h1')?.focus();
@@ -67,17 +67,17 @@ export function mountArcade({getSettings,enter,exit,speak,stopSpeech}){
   function render(){
     if(!current)return;
     let content='';
-    const topics=availableTopics(current.book,current.kind);
+    const topics=availableTopics(current.book,current.kind,current.game);
     if(current.phase==='setup'){
       const words=practicePool(current.book,current.level).length;
-      content='<div class="arcade-setup"><div><h2>Choose your challenge</h2><p role="status">'+esc(current.message)+'</p><label>Listen for a sound or look for a spelling?<select data-arcade-setting="kind"><option value="sound" '+(current.kind==='sound'?'selected':'')+'>Sound — compare what you hear</option><option value="spelling" '+(current.kind==='spelling'?'selected':'')+'>Spelling — compare the letters</option></select></label><p class="mode-explanation">'+(current.kind==='sound'?'Sound: say the words and compare their pronunciation. Different spellings can make the same sound: cake, rain, day.':'Spelling: compare the written letters. Cake and rain share long a, but only cake uses a_e. The dots stand for a consonant.')+'</p><label>Practice focus<select data-arcade-setting="topic">'+topics.map(t=>'<option value="'+esc(t.key)+'" '+(t.key===current.topic?'selected':'')+'>'+esc(t.label)+'</option>').join('')+'</select></label><p>'+words+' sound and spelling examples available at this level. Words rotate across plays.</p><label class="arcade-check"><input type="checkbox" data-arcade-setting="timed" '+(current.timed?'checked':'')+'>Gentle countdown</label><button type="button" class="primary" data-arcade-action="begin">Let’s explore →</button></div><div class="arcade-preview"><span class="'+(current.game==='mole'?'mole-sprite':'fox-sprite')+'"></span></div></div>';
+      content='<div class="arcade-setup"><div><h2>Choose your challenge</h2><p role="status">'+esc(current.message)+'</p><label>Listen for a sound or look for a spelling?<select data-arcade-setting="kind"><option value="sound" '+(current.kind==='sound'?'selected':'')+'>Sound — compare what you hear</option><option value="spelling" '+(current.kind==='spelling'?'selected':'')+'>Spelling — compare the letters</option></select></label><p class="mode-explanation">'+(current.kind==='sound'?'Sound: compare pronunciation. Practise a focused contrast, such as short e vs. short i or /ts/ vs. /dz/. Different spellings can make the same sound.':'Spelling: in the mole garden, catch an incorrect spelling and learn the rule. In the library, find a named sound AND spelling, such as long u /yoo/ spelled u_e, as in cute. The dot stands for a consonant.')+'</p><label>Practice focus<select data-arcade-setting="topic">'+topics.map(t=>'<option value="'+esc(t.key)+'" '+(t.key===current.topic?'selected':'')+'>'+esc(t.label)+'</option>').join('')+'</select></label><p>'+words+' sound and spelling examples available at this level. Words rotate across plays.</p><label class="arcade-check"><input type="checkbox" data-arcade-setting="timed" '+(current.timed?'checked':'')+'>Gentle countdown</label><button type="button" class="primary" data-arcade-action="begin">Let’s explore →</button></div><div class="arcade-preview"><span class="'+(current.game==='mole'?'mole-sprite':'fox-sprite')+'"></span></div></div>';
     }else if(current.phase==='done'){
       content='<div class="arcade-finish"><div class="fox-sprite celebrating" aria-hidden="true"></div><h2>The academy is glowing!</h2><p>'+current.score+' '+(current.game==='mole'?'moles helped.':'books put back on the shelf.')+'</p><p>Read your discoveries together.</p><div class="arcade-shelf">'+[...new Set(current.collected)].map(w=>'<span>'+esc(w)+'</span>').join('')+'</div><button class="primary" type="button" data-arcade-action="replay">Explore new words →</button></div>';
     }else{
       const q=current.question;
-      const topic=current.kind==='spelling'?labelPattern(current.topic):labelSound(current.topic);
-      const prompt=current.game==='mole'?'Which word has a different '+(current.kind==='spelling'?'spelling pattern?':q.position==='middle'||q.position==='vowel'?'vowel sound?':q.position==='final y'?'sound for final y?':q.position==='anywhere'?'target sound?':q.position+' sound?'):'Find every word with '+topic+'.';
-      const clue=current.game==='mole'?'The others '+(current.kind==='spelling'?'use '+topic+'.':(q.position==='vowel'?'have the '+topic+' sound.':q.position==='middle'?'have '+topic+' in the middle.':q.position==='final y'?'have '+topic+'.':q.position==='anywhere'?'contain the '+topic+' sound.':'have '+topic+' at the '+q.position+'.')):'Move the light to reveal a word. It goes dark when the beam moves away. Tap every match.';
+      const topic=q.focusLabel??(current.kind==='spelling'?labelPattern(q.topic):labelSound(q.topic));
+      const prompt=q.prompt??(current.game==='mole'?'Which word has a different '+(current.kind==='spelling'?'spelling pattern?':q.position==='middle'||q.position==='vowel'?'vowel sound?':q.position==='final y'?'sound for final y?':q.position==='anywhere'?'target sound?':q.position+' sound?'):'Find every word with '+topic+'.');
+      const clue=q.clue??(current.game==='mole'?'The others '+(current.kind==='spelling'?'use '+topic+'.':(q.position==='vowel'?'have the '+topic+' sound.':q.position==='middle'?'have '+topic+' in the middle.':q.position==='final y'?'have '+topic+'.':q.position==='anywhere'?'contain the '+topic+' sound.':'have '+topic+' at the '+q.position+'.')):'Move the light to reveal a word. It goes dark when the beam moves away. Tap every match.');
       const canNext=current.phase==='cleared';
       const columns=current.game==='flashlight'?Math.ceil(q.options.length/2):q.options.length;
       content='<div class="arcade-instructions"><strong class="mode-badge">'+(current.kind==='sound'?'SOUND · Compare what you hear':'SPELLING · Compare the written letters')+'</strong><h2>'+esc(prompt)+'</h2><p>'+esc(clue)+'</p>'+(current.game==='mole'?'<p class="pop-instruction">Wait for the moles to pop up. Tap the odd word before they duck down. They will come back!</p>':'')+'</div><div class="arcade-toolbar"><button type="button" class="quiet" data-arcade-action="pause">'+(current.paused?'Resume':'Pause')+'</button><button type="button" class="quiet" data-arcade-action="music">♫ Music '+(current.music?'on':'off')+'</button><button type="button" class="quiet" data-arcade-action="help">Help me compare</button><span>Round '+Math.min(current.round+1,current.total)+' of '+current.total+'</span>'+(current.timed?'<span class="arcade-clock" role="timer">Time <b>'+Math.ceil(current.remaining/1000)+'</b> s</span>':'')+'</div><div class="arcade-field '+current.game+' '+(current.paused?'paused':'')+' '+(canNext?'cleared':'')+' '+(current.phase==='expired'?'expired':'')+'" style="--beam-x:50%;--beam-y:50%;--columns:'+columns+'" aria-label="'+(current.game==='mole'?'Mole garden':'Explore the library with your flashlight')+'">'+
@@ -87,8 +87,8 @@ export function mountArcade({getSettings,enter,exit,speak,stopSpeech}){
         (current.paused?'<div class="arcade-overlay"><strong>Take your time</strong><button class="primary" type="button" data-arcade-action="pause">Resume</button></div>':'')+
         (current.phase==='expired'?'<div class="arcade-overlay"><strong>The magic is fading!</strong><p>Take another look. Your words are waiting.</p><button class="primary" type="button" data-arcade-action="retry">Light it up again</button></div>':'')+
         '</div><p class="arcade-feedback" role="status">'+esc(current.message||'')+'</p>'+
-        (current.help?'<div class="arcade-help"><p>'+esc(current.kind==='sound'?'Say each word slowly. Compare the '+q.position+' sound.':'Read each word. Look for '+topic+'.')+'</p>'+q.options.map((entry,index)=>'<button type="button" class="quiet" data-arcade-hear="'+index+'">'+esc(entry.word)+(entry.clip?' ◖))':'')+'</button>').join('')+'<p>Teacher can read any word aloud.</p></div>':'')+
-        (canNext?'<button class="primary" type="button" data-arcade-action="next">'+(current.round+1>=current.total?'Open the magic door':'Next discovery')+' →</button>':'')+
+        (current.help?'<div class="arcade-help"><p>'+esc(q.explanation??(current.kind==='sound'?'Say each word slowly. Compare '+topic+'.':'Read each word. Look for '+topic+'.'))+'</p>'+q.options.map((entry,index)=>'<button type="button" class="quiet" data-arcade-hear="'+index+'">'+esc(entry.word)+(entry.clip?' ◖))':'')+'</button>').join('')+'<p>Teacher can read any word aloud.</p></div>':'')+
+        (canNext?'<p class="auto-next">'+(current.round+1>=current.total?'Opening the magic door…':'Next round coming…')+' Pause to read the explanation.</p>':'')+
         '<div class="arcade-shelf" aria-label="Collected words">'+current.collected.map(w=>'<span>'+esc(w)+'</span>').join('')+'</div>';
     }
     host.innerHTML=heading()+content+'</article>';
@@ -122,7 +122,9 @@ export function mountArcade({getSettings,enter,exit,speak,stopSpeech}){
     clock=setInterval(()=>{
       if(!current)return;
       const now=performance.now(),delta=now-current.lastTick;current.lastTick=now;
-      if(current.paused||current.phase!=='playing'||document.hidden||document.getElementById('guide')?.open)return;
+      if(current.paused||document.hidden||document.getElementById('guide')?.open)return;
+      if(current.phase==='cleared'){current.clearedFor=(current.clearedFor??0)+delta;if(current.clearedFor>=(current.question.rule?5500:1800))nextQuestion();return;}
+      if(current.phase!=='playing')return;
       current.moleElapsed+=delta;updateMoles();
       if(!current.timed)return;
       current.remaining=Math.max(0,current.remaining-delta);
@@ -173,8 +175,16 @@ export function mountArcade({getSettings,enter,exit,speak,stopSpeech}){
     const setting=event.target.dataset.arcadeSetting;
     if(!setting)return;
     current[setting]=setting==='timed'?event.target.checked:event.target.value;
-    if(setting==='kind'){current.topic=availableTopics(current.book,current.kind)[0]?.key;render();}
+    if(setting==='kind'){current.topic=availableTopics(current.book,current.kind,current.game)[0]?.key;render();}
   });
+  function nextQuestion(){
+    if(!current||current.phase!=='cleared')return;
+    current.round++;
+    if(current.round>=current.total){current.phase='done';render();return;}
+    const revisit=current.retry.find(q=>q.at<=current.round);
+    if(revisit){current.retry.splice(current.retry.indexOf(revisit),1);current.question=revisit.question;resetQuestion(true);}
+    else resetQuestion();
+  }
   host.addEventListener('click',event=>{
     if(!current)return;
     const wordButton=event.target.closest('[data-arcade-word]');
@@ -184,14 +194,14 @@ export function mountArcade({getSettings,enter,exit,speak,stopSpeech}){
       if(current.game==='flashlight'&&!current.revealed.has(entry.word)){reveal(wordButton);return;}
       if(current.question.correct.has(entry.word)){
         if(current.found.has(entry.word))return;
-        current.found.add(entry.word);current.score++;current.collected.push(entry.word);fx(true);
+        current.found.add(entry.word);current.score++;current.collected.push(entry.fix??entry.word);fx(true);
         const badge=host.querySelector('.arcade-stage header>span');if(badge)badge.textContent=current.score+' '+(current.game==='mole'?'moles helped':'books found');
         wordButton.classList.add('collected');wordButton.disabled=true;
-        current.message=current.game==='mole'?'You spotted it! '+entry.word+' is the odd one.':'Back on the shelf! '+entry.word;
+        current.message=entry.fix?'You caught it! '+entry.word+' → '+entry.fix+'. '+entry.reason:current.game==='mole'?'You spotted it! '+entry.word+' is the odd one.':'Back on the shelf! '+entry.word;
         if(current.found.size===current.question.correct.size){
-          current.phase='cleared';current.message+=' The magic is growing!';
+          current.phase='cleared';current.clearedFor=0;if(!entry.fix)current.message+=' The magic is growing!';
           const state=current;
-          setTimeout(()=>{if(current===state&&state.phase==='cleared'){render();host.querySelector('[data-arcade-action="next"]')?.focus({preventScroll:true});}},650);
+          setTimeout(()=>{if(current===state&&state.phase==='cleared'){render();}},650);
         }else{
           host.querySelector('.arcade-feedback').textContent=current.message;
           const shelf=host.querySelector('.arcade-shelf');const tile=document.createElement('span');tile.textContent=entry.word;shelf.append(tile);
@@ -214,15 +224,7 @@ export function mountArcade({getSettings,enter,exit,speak,stopSpeech}){
       case 'help':current.paused=true;current.help=true;render();break;
       case 'retry':current.paused=false;resetQuestion(true);break;
       case 'replay':launch(current.game);break;
-      case 'next':{
-        if(current.phase!=='cleared')break;
-        current.round++;
-        if(current.round>=current.total){current.phase='done';render();break;}
-        const revisit=current.retry.find(q=>q.at<=current.round);
-        if(revisit){current.retry.splice(current.retry.indexOf(revisit),1);current.question=revisit.question;resetQuestion(true);}
-        else resetQuestion();
-        break;
-      }
+      case 'next':nextQuestion();break;
     }
   });
   document.addEventListener('visibilitychange',()=>{if(current){current.lastTick=performance.now();setMusic();}});

@@ -1,3 +1,4 @@
+import {ruleTopics,ruleQuestion} from './arcade-rules.mjs?v=arcade4';
 import {bookWords} from './bank.mjs?v=arcade1';
 
 const soundNames={
@@ -6,7 +7,7 @@ const soundNames={
   sh:'/sh/ as in ship',ch:'/ch/ as in chin',ng:'/ng/ as in ring',n:'/n/ as in fan',m:'/m/ as in ham',
   a:'short a',e:'short e',i:'short i',o:'short o',u:'short u',
   'long-a':'long a','long-e':'long e','long-i':'long i','long-o':'long o',
-  yoo:'long u as in cube','oo-long':'oo as in moon','oo-short':'oo as in book',
+  yoo:'long u /yoo/ as in cute','oo-long':'oo as in moon','oo-short':'oo as in book',
   'th-voiced':'th as in this','th-unvoiced':'th as in thin',
   'y-i':'final y as in fly','y-e':'final y as in happy',
 };
@@ -114,12 +115,17 @@ for(const [book,patterns] of Object.entries(extra)){
 export const arcadeBank=all;
 export const labelSound=key=>soundNames[key]??(key==='all'?'ending in ball':key==='short-o'?'vowel in doll':key);
 export const labelPattern=key=>key.replace('_',' · ');
-export function availableTopics(book,kind){
+export function availableTopics(book,kind,game){
+  if(kind==='spelling'&&game==='mole')return ruleTopics(book);
   const field=kind==='spelling'?'pattern':'sound';
   const entries=arcadeBank.filter(e=>e.book===Number(book));
-  return [...new Set(entries.map(e=>e[field]))]
+  if(kind==='spelling'){
+    return [...new Set(entries.map(e=>e.pattern+'::'+e.sound))].filter(key=>entries.filter(e=>e.pattern+'::'+e.sound===key).length>=3).map(key=>{const [pattern,sound]=key.split('::');return {key,label:spellingFocus(pattern,sound)};});
+  }
+  const contrasts=kind==='sound'&&Number(book)===1?[{key:'contrast-e-i',label:'Short e vs. short i'},{key:'contrast-ts-ds',label:'Endings /ts/ vs. /dz/ (ts and ds)'}]:[];
+  return [...contrasts,...[...new Set(entries.map(e=>e[field]))]
     .filter(key=>new Set(entries.filter(e=>e[field]===key).map(e=>e.word)).size>=3)
-    .map(key=>({key,label:kind==='spelling'?labelPattern(key):labelSound(key)}));
+    .map(key=>({key,label:kind==='spelling'?spellingFocus(key,entries.find(e=>e.pattern===key)?.sound):labelSound(key)}))];
 }
 export function practicePool(book,level){
   const entries=arcadeBank.filter(e=>e.book===Number(book));
@@ -130,11 +136,24 @@ export function practicePool(book,level){
     return sorted.slice(0,level==='simple'?5:14);
   });
 }
+export function spellingFocus(pattern,sound){
+ const names={a:'short a',e:'short e',i:'short i',o:'short o',u:'short u'};
+ const focus=(sound===pattern?names[pattern]:null)??labelSound(sound);
+ return focus+' — spelled '+labelPattern(pattern);
+}
 export function buildArcadeQuestion({book,level,kind,topic,game},choose){
+ if(kind==='spelling'&&game==='mole')return ruleQuestion({book,level,kind,topic,game},choose);
+ let contrast=null;
+ if(topic==='contrast-e-i')contrast=['e','i'];
+ if(topic==='contrast-ts-ds')contrast=['ts','ds'];
+ if(contrast)topic=contrast[Math.random()<.5?0:1];
+  let targetSound=null;
+  if(kind==='spelling'){const parts=topic.split('::');topic=parts[0];targetSound=parts[1]??null;}
   const ambiguous=new Set(['bow','sow','row','read','tune','new','knew','due','dew']);
   const pool=practicePool(book,level).filter(e=>kind==='spelling'||!ambiguous.has(e.word));
   const field=kind==='spelling'?'pattern':'sound';
-  const targets=pool.filter(e=>e[field]===topic);
+  if(kind==='spelling'&&!targetSound)targetSound=pool.find(e=>e.pattern===topic)?.sound;
+  const targets=pool.filter(e=>e[field]===topic&&(kind!=='spelling'||e.sound===targetSound));
   const exemplar=targets[0];
   const sameDomain=entry=>{
     if(!exemplar)return false;
@@ -143,7 +162,8 @@ export function buildArcadeQuestion({book,level,kind,topic,game},choose){
     if(Number(book)===2)return (entry.group==='finals')===(exemplar.group==='finals');
     return (entry.group==='y')===(exemplar.group==='y');
   };
-  let other=pool.filter(sameDomain).filter(e=>e[field]!==topic&&!targets.some(t=>t.word===e.word));
+  let other=pool.filter(sameDomain).filter(e=>(e[field]!==topic||(kind==='spelling'&&e.sound!==targetSound))&&!targets.some(t=>t.word===e.word));
+  if(contrast)other=other.filter(e=>contrast.includes(e.sound));
   if(kind==='spelling'&&Number(book)===2){
     const sameSound=other.filter(e=>e.sound===exemplar?.sound);
     if(sameSound.length)other=sameSound;
@@ -153,5 +173,5 @@ export function buildArcadeQuestion({book,level,kind,topic,game},choose){
   const matching=choose(targets,targetCount);
   const distractors=choose(other,game==='mole'?1:targetCount);
   const options=[...matching,...distractors].sort(()=>Math.random()-.5);
-  return {options,position:Number(book)===1?(exemplar.group==='vowels'?'middle':exemplar.group==='endings'?'end':exemplar.group==='digraphs'?'anywhere':'start'):Number(book)===2?(exemplar.group==='finals'?'end':'vowel'):(exemplar.group==='y'?'final y':'start'),correct:new Set((game==='mole'?distractors:matching).map(e=>e.word)),field,topic};
+  return {options,targetSound,focusLabel:kind==='spelling'?spellingFocus(topic,exemplar.sound):labelSound(topic),position:Number(book)===1?(exemplar.group==='vowels'?'middle':exemplar.group==='endings'?'end':exemplar.group==='digraphs'?'anywhere':'start'):Number(book)===2?(exemplar.group==='finals'?'end':'vowel'):(exemplar.group==='y'?'final y':'start'),correct:new Set((game==='mole'?distractors:matching).map(e=>e.word)),field,topic};
 }

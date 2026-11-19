@@ -80,3 +80,11 @@
 .review-card{justify-content:space-between}
 @media(max-width:700px){.mole .arcade-word{height:220px;top:auto!important;margin:12px 1%}.mole .arcade-word .mole-sprite{width:175px;height:175px}.mole .arcade-word:nth-of-type(even){top:auto}.mole .arcade-word .word-sign{font-size:30px;padding:8px}.mole-rise{bottom:20px}}
 @media(prefers-reduced-motion:reduce){.mole .burrowed .mole-rise{transform:none}}
+.mole .arcade-word .mole-sprite{background-image:url('./assets/mole-holding-word.webp');background-size:contain;background-position:center!important;animation:none!important;width:100%;height:100%;left:0;transform:none;bottom:0}
+.mole-rise{animation:mole-bob 2.8s var(--delay) ease-in-out infinite}
+.mole .burrowed .mole-rise,.mole .collected .mole-rise{animation:none}
+.mole .mole-rise .word-sign{left:50%;bottom:16%;min-width:0;width:83%;max-width:83%;padding:0 3px;border:0;background:none;box-shadow:none;text-shadow:0 1px #fff7;line-height:1.1}
+@keyframes mole-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(10px)}}
+.auto-next{font-size:22px;color:#ffe4a2;padding:0 26px}
+@media(max-width:700px){.mole .arcade-word .mole-sprite{width:100%;height:100%}.mole .arcade-word .word-sign{padding:0 2px;font-size:clamp(24px,5vw,32px)}}
+@media(prefers-reduced-motion:reduce){.mole-rise{animation:none!important}}
