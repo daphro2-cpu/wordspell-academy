@@ -92,3 +92,14 @@
 .mole-rise{width:min(100%,250px);left:50%;right:auto;translate:-50% 0}
 .mole .mole-earth{display:none}
 .mole .arcade-word{background:radial-gradient(ellipse 110px 14px at 50% 94%,#100b17 65%,#65432e 76%,transparent 83%)}
+/* The burrow has separate painted back/front layers. The mole disappears below its opening. */
+.mole .arcade-word{height:280px;background:none;border-radius:0;overflow:visible}
+.mole-window{position:absolute;left:50%;translate:-50% 0;width:min(100%,260px);height:240px;bottom:35px;overflow:hidden;z-index:1;pointer-events:none}
+.mole-window .mole-rise{inset:auto auto 0 50%;width:min(100%,240px);height:240px;animation:none!important;transform:translateY(0);transition:transform .45s ease-in-out,visibility 0s}
+.mole .burrowed .mole-rise,.mole .collected .mole-rise{transform:translateY(110%)!important;visibility:hidden;transition:transform .45s ease-in-out,visibility 0s .45s}
+.mole .burrowed:focus-visible .mole-rise{transform:translateY(0)!important;visibility:visible;transition:transform .45s ease-out}
+.burrow-back,.burrow-front{position:absolute;display:block;left:50%;translate:-50% 0;bottom:0;width:min(100%,275px);height:92px;background:url('./assets/mole-burrow.webp') center bottom/100% 100% no-repeat;pointer-events:none}
+.burrow-back{z-index:0}.burrow-front{z-index:2;clip-path:inset(59% 0 0)}
+.mole .arcade-word:focus-visible{outline-offset:0}
+@media(max-width:700px){.mole .arcade-word{height:225px}.mole-window{height:195px;bottom:27px}.mole-window .mole-rise{width:100%;height:195px}.burrow-back,.burrow-front{height:70px}}
+@media(prefers-reduced-motion:reduce){.mole-window .mole-rise{transition:none!important}}

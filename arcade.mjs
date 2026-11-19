@@ -1,3 +1,4 @@
+import {moleIsUp} from './burrow-state.mjs?v=burrows1';
 import {availableTopics,buildArcadeQuestion,labelSound,labelPattern,practicePool} from './arcade-bank.mjs?v=arcade4';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const shuffle=a=>[...a].sort(()=>Math.random()-.5);
@@ -82,7 +83,7 @@ export function mountArcade({getSettings,enter,exit,speak,stopSpeech}){
       const columns=current.game==='flashlight'?Math.ceil(q.options.length/2):q.options.length;
       content='<div class="arcade-instructions"><strong class="mode-badge">'+(current.kind==='sound'?'SOUND · Compare what you hear':'SPELLING · Compare the written letters')+'</strong><h2>'+esc(prompt)+'</h2><p>'+esc(clue)+'</p>'+(current.game==='mole'?'<p class="pop-instruction">Wait for the moles to pop up. Tap the odd word before they duck down. They will come back!</p>':'')+'</div><div class="arcade-toolbar"><button type="button" class="quiet" data-arcade-action="pause">'+(current.paused?'Resume':'Pause')+'</button><button type="button" class="quiet" data-arcade-action="music">♫ Music '+(current.music?'on':'off')+'</button><button type="button" class="quiet" data-arcade-action="help">Help me compare</button><span>Round '+Math.min(current.round+1,current.total)+' of '+current.total+'</span>'+(current.timed?'<span class="arcade-clock" role="timer">Time <b>'+Math.ceil(current.remaining/1000)+'</b> s</span>':'')+'</div><div class="arcade-field '+current.game+' '+(current.paused?'paused':'')+' '+(canNext?'cleared':'')+' '+(current.phase==='expired'?'expired':'')+'" style="--beam-x:50%;--beam-y:50%;--columns:'+columns+'" aria-label="'+(current.game==='mole'?'Mole garden':'Explore the library with your flashlight')+'">'+
         '<div class="library-door" aria-hidden="true">'+(canNext?'✦':'')+'</div>'+
-        q.options.map((entry,index)=>'<button type="button" class="arcade-word '+(current.found.has(entry.word)?'collected':'')+' '+(current.revealed.has(entry.word)?'discovered':'')+'" style="--column:'+index%columns+';--row:'+Math.floor(index/columns)+';--delay:'+index*.17+'s" data-arcade-word="'+index+'" '+(current.paused||current.phase!=='playing'||current.found.has(entry.word)?'disabled':'')+' aria-label="'+esc(entry.word)+'">'+(current.game==='mole'?'<span class="mole-earth" aria-hidden="true"></span><span class="mole-rise"><span class="mole-sprite" aria-hidden="true"></span>':'<span class="book-spine" aria-hidden="true"></span>')+'<span class="word-sign" style="--letters:'+entry.word.length+'">'+esc(entry.word)+'</span>'+(current.game==='mole'?'</span>':'')+'</button>').join('')+
+        q.options.map((entry,index)=>'<button type="button" class="arcade-word '+(current.found.has(entry.word)?'collected':'')+' '+(current.revealed.has(entry.word)?'discovered':'')+'" style="--column:'+index%columns+';--row:'+Math.floor(index/columns)+';--delay:'+index*.17+'s" data-arcade-word="'+index+'" '+(current.paused||current.phase!=='playing'||current.found.has(entry.word)?'disabled':'')+' aria-label="'+esc(entry.word)+'">'+(current.game==='mole'?'<span class="burrow-back" aria-hidden="true"></span><span class="mole-window"><span class="mole-rise"><span class="mole-sprite" aria-hidden="true"></span>':'<span class="book-spine" aria-hidden="true"></span>')+'<span class="word-sign" style="--letters:'+entry.word.length+'">'+esc(entry.word)+'</span>'+(current.game==='mole'?'</span></span><span class="burrow-front" aria-hidden="true"></span>':'')+'</button>').join('')+
         (current.game==='flashlight'?'<div class="library-shade" aria-hidden="true"></div><div class="fox-walker" aria-hidden="true"><span class="fox-sprite"></span><span class="torch-beam"></span></div>':'')+
         (current.paused?'<div class="arcade-overlay"><strong>Take your time</strong><button class="primary" type="button" data-arcade-action="pause">Resume</button></div>':'')+
         (current.phase==='expired'?'<div class="arcade-overlay"><strong>The magic is fading!</strong><p>Take another look. Your words are waiting.</p><button class="primary" type="button" data-arcade-action="retry">Light it up again</button></div>':'')+
@@ -101,8 +102,9 @@ export function mountArcade({getSettings,enter,exit,speak,stopSpeech}){
     if(current?.game!=='mole')return;
     host.querySelectorAll('[data-arcade-word]').forEach((button,index)=>{
       const t=current.moleElapsed??0;
-      const down=t>5000&&((t-5000+index*1700)%9000)>6800;
-      button.classList.toggle('burrowed',down&&current.phase==='playing');
+      const rank=current.moleOrder?.indexOf(index)??index;
+      const down=!moleIsUp(t,rank,current.question.options.length,current.level);
+      button.classList.toggle('burrowed',current.phase==='cleared'||down);
     });
   }
   function resetQuestion(reuse=false){
@@ -112,6 +114,7 @@ export function mountArcade({getSettings,enter,exit,speak,stopSpeech}){
       current.question=buildArcadeQuestion(current,(entries,count)=>chooseEntries(entries,count,current));
       current.question.options=current.question.options.map(e=>({...e,clip:clipWords.has(e.word)}));
     }
+    current.moleOrder=shuffle(current.question.options.map((_,index)=>index));
     current.lastTick=performance.now();
     render();
   }
