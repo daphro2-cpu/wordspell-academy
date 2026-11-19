@@ -154,3 +154,5 @@
 @keyframes potion-word-emerges{0%{opacity:0;transform:translate(-50%,100px) scale(.15)}35%{opacity:1}100%{opacity:1;transform:translate(calc(-50% + var(--drift-x)),var(--drift-y)) scale(1)}}
 @media(max-width:520px){.potion-word-bubble{font-size:24px;padding:8px;--drift-x:0px!important}.potion-word-bubble:nth-of-type(3n+1){left:18%}.potion-word-bubble:nth-of-type(3n+3){left:82%}}
 @media(prefers-reduced-motion:reduce){.brewing-cauldron{animation:none}.potion-word-bubble{animation:none;transform:translate(calc(-50% + var(--drift-x)),var(--drift-y))}}
+.review-book-slot{padding-bottom:48px}
+.review-book-slot .book-model{position:absolute;left:50%;translate:-50% 0;bottom:15px;width:max-content;margin:0}

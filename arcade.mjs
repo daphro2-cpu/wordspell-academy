@@ -2,7 +2,7 @@ import {cueFor} from './sound-cues.mjs?v=reading3';
 import {createBookReader} from './book-reading.mjs?v=reading3';
 import {playVoiceSuccess} from './effects.mjs?v=arcade1';
 import {moleIsUp} from './burrow-state.mjs?v=burrows1';
-import {availableTopics,buildArcadeQuestion,labelSound,labelPattern,practicePool} from './arcade-bank.mjs?v=focus2';
+import {availableTopics,buildArcadeQuestion,labelSound,labelPattern,practicePool} from './arcade-bank.mjs?v=reading3b';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const shuffle=a=>[...a].sort(()=>Math.random()-.5);
 const music=new Audio('./audio/warm-magic.mp3');

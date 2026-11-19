@@ -146,12 +146,13 @@ export function spellingFocus(pattern,sound){
 export function buildArcadeQuestion({book,level,kind,topic,game,task='all'},choose){
  if(kind==='spelling'&&game==='mole')return ruleQuestion({book,level,kind,topic,game},choose);
  const spec=contrastFor(book,topic);
- const contrast=spec?.[2]??null;
- if(contrast)topic=contrast[Math.floor(Math.random()*contrast.length)];
+ let contrast=spec?.[2]??null;
+ if(spec)topic=contrast[Math.floor(Math.random()*contrast.length)];
+ if(!spec&&Number(book)===1){if(['n','ng','m'].includes(topic))contrast=['n','ng','m'];if(['ts','ds'].includes(topic))contrast=['ts','ds'];if(['sh','ch'].includes(topic))contrast=['sh','ch'];}
   let targetSound=null;
   if(kind==='spelling'){const parts=topic.split('::');topic=parts[0];targetSound=parts[1]??null;}
   const ambiguous=new Set(['bow','sow','row','read','tune','new','knew','due','dew']);
-  const pool=practicePool(book,level).filter(e=>kind==='spelling'||!ambiguous.has(e.word)).filter(e=>Number(book)!==1||!spec||spec[3]!=='Compare beginning consonants'||e.group==='pairs').filter(e=>Number(book)!==1||!spec||spec[3]!=='Compare ending sounds'||e.group==='endings');
+  const pool=practicePool(book,level).filter(e=>Number(book)!==1||!contrast||!['n','ng','m','ts','ds'].includes(topic)||e.group==='endings').filter(e=>kind==='spelling'||!ambiguous.has(e.word)).filter(e=>Number(book)!==1||!spec||spec[3]!=='Compare beginning consonants'||e.group==='pairs').filter(e=>Number(book)!==1||!spec||spec[3]!=='Compare ending sounds'||e.group==='endings');
   const field=kind==='spelling'?'pattern':'sound';
   if(kind==='spelling'&&!targetSound)targetSound=pool.find(e=>e.pattern===topic)?.sound;
   let targets=pool.filter(e=>e[field]===topic&&(kind!=='spelling'||e.sound===targetSound));
@@ -176,5 +177,5 @@ export function buildArcadeQuestion({book,level,kind,topic,game,task='all'},choo
   const matching=choose(targets,targetCount);
   const distractors=choose(other,game==='mole'?(task==='odd'?1:3):targetCount);
   const options=[...matching,...distractors].sort(()=>Math.random()-.5);
-  return {options,task,targetSound,focusLabel:kind==='spelling'?spellingFocus(topic,exemplar.sound):labelSound(topic),position:spec?(spec[3].includes('ending')?'end':spec[3].includes('vowel')?'middle':spec[3].includes('digraph')?'anywhere':spec[3].includes('sounds of y')?'final y':'start'):Number(book)===1?(exemplar.group==='vowels'?'middle':exemplar.group==='endings'?'end':exemplar.group==='digraphs'?'anywhere':'start'):Number(book)===2?(exemplar.group==='finals'?'end':'vowel'):(exemplar.group==='y'?'final y':'start'),correct:new Set((game==='mole'&&task==='odd'?distractors:matching).map(e=>e.word)),field,topic};
+  return {options,task,targetSound,focusLabel:kind==='spelling'?spellingFocus(topic,exemplar.sound):labelSound(topic),position:Number(book)===1&&['n','ng','m','ts','ds'].includes(topic)?'end':spec?(spec[3].includes('ending')?'end':spec[3].includes('vowel')?'middle':spec[3].includes('digraph')?'anywhere':spec[3].includes('sounds of y')?'final y':'start'):Number(book)===1?(exemplar.group==='vowels'?'middle':exemplar.group==='endings'?'end':exemplar.group==='digraphs'?'anywhere':'start'):Number(book)===2?(exemplar.group==='finals'?'end':'vowel'):(exemplar.group==='y'?'final y':'start'),correct:new Set((game==='mole'&&task==='odd'?distractors:matching).map(e=>e.word)),field,topic};
 }
