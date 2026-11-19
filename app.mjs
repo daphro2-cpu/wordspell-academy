@@ -1,12 +1,12 @@
 import {resemblesWord} from './spoken-word.mjs?v=arcade1';
-import {mountArcade,registerArcadeClips} from './arcade.mjs?v=arcade2';
+import {mountArcade,registerArcadeClips} from './arcade.mjs?v=arcade3';
 import {playSpinSound,playReelStop,stopSpinSound,playVoiceSuccess} from './effects.mjs?v=arcade1';
 import {catalog} from './bank.mjs?v=arcade1';
 import {modes,levels,createRound,sortingBoard,practiceContrasts,shuffle,choiceLabel,isVowelTile} from './engine.mjs?v=arcade1';
 
 import {missions,flightMission} from './missions.mjs?v=listen-sort';
 import {makeStory} from './story.mjs?v=arcade1';
-import {reviewPicture} from './review.mjs?v=storybook-clues';
+import {reviewPicture} from './review.mjs?v=word-clues';
 
 const by=id=>document.getElementById(id);
 const lobby=by('lobby'), play=by('play'), guide=by('guide');
@@ -15,7 +15,7 @@ const flightMusic=by('flight-music');
 const flightEffect=new Audio();
 flightEffect.volume=.42;
 const flightTime={simple:22,medium:19,difficult:16};
-const sortTime={simple:30,medium:35,difficult:40};
+const sortTime={simple:18,medium:20,difficult:20};
 const flightWarningAt=5000;
 let sortClock;
 let flightClock;
@@ -392,7 +392,7 @@ function sortWord(portal) {
 function flightPicture(word){
   const picture=reviewPicture(word);
   if(!picture)return '';
-  if(picture.atlas)return '<span class="storybook-clue" aria-hidden="true" style="background-position:'+picture.x+'% '+picture.y+'%"></span>';
+  if(picture.atlas)return '<span class="storybook-clue" aria-hidden="true" style="'+(picture.sheet?'background-image:url('+esc(picture.sheet)+');':'')+'background-position:'+picture.x+'% '+picture.y+'%"></span>';
   return picture.src?'<img src="'+esc(picture.src)+'" alt="" class="flying-object">':
     '<span class="flight-picture-icon" aria-hidden="true">'+esc(picture.icons)+'</span>';
 }
@@ -997,9 +997,9 @@ function wordReview(entries,storyOnly=false){
     <div class="review-cards">${words.map(entry=>{
       const word=entry.word;
       const clue=entry.nonsense?null:reviewPicture(word);
-      const picture=storyOnly&&!clue?.src?null:clue;
+      const picture=clue;
       const opened=active.revealed.has(word);
-      const art=picture?.atlas?'<span class="storybook-clue review-atlas" aria-hidden="true" style="background-position:'+picture.x+'% '+picture.y+'%"></span>':picture?.src?'<img alt="" src="'+esc(picture.src)+'">':'<span class="review-icon" aria-hidden="true">'+esc(picture?.icons??'')+'</span>';
+      const art=picture?.atlas?'<span class="storybook-clue review-atlas" aria-hidden="true" style="'+(picture.sheet?'background-image:url('+esc(picture.sheet)+');':'')+'background-position:'+picture.x+'% '+picture.y+'%"></span>':picture?.src?'<img alt="" src="'+esc(picture.src)+'">':'<span class="review-icon" aria-hidden="true">'+esc(picture?.icons??'')+'</span>';
       return `<div class="review-card">${picture?'<button type="button" class="review-flip" data-review-word="'+esc(word)+'" aria-expanded="'+opened+'">'+(opened?art:'<span class="review-curtain" aria-hidden="true">✧</span>')+'<strong>'+esc(word)+'</strong></button>':'<strong class="review-text">'+esc(word)+'</strong>'}
         ${picture?.hint&&opened?'<p>'+esc(picture.hint)+'</p>':''}${entry.nonsense?'':audioButton(word,'Hear it')}</div>`;
     }).join('')}</div></section>`;

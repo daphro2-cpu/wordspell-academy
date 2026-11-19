@@ -56,3 +56,27 @@
 .sort-timer progress{display:block;width:100%;height:13px;margin:7px 0;accent-color:#ffd77e}
 .sort-timer small{font-size:14px;display:block;line-height:1.2}
 .sort-timer.timer-disabled{opacity:.65}
+/* Moles emerge through a clipped burrow; the whole character and sign duck away. */
+.mole .arcade-word{height:255px;overflow:hidden;border-radius:48% 48% 14px 14px;top:8%;background:radial-gradient(ellipse 48% 12% at 50% 94%,#100b17 65%,#65432e 76%,transparent 83%)}
+.mole .arcade-word:nth-of-type(even){top:33%}
+.mole-rise{position:absolute;inset:0 0 22px;display:block;transform:translateY(0);transition:transform .65s cubic-bezier(.4,0,.2,1);z-index:1}
+.mole .arcade-word .mole-sprite{bottom:0;width:215px;height:215px;animation:mole-look 5s var(--delay) steps(1) infinite}
+.mole .mole-rise .word-sign{bottom:4px;max-width:95%;box-sizing:border-box}
+.mole .burrowed .mole-rise{transform:translateY(260px)}
+.mole .burrowed:focus-visible .mole-rise{transform:translateY(0)}
+.mole-earth{bottom:0;z-index:2;pointer-events:none;height:24px;border-radius:0 0 45% 45%;background:linear-gradient(#8c6346,#533726);box-shadow:0 -3px 0 #c69c67}
+.mole .collected .mole-rise{transform:translateY(260px);transition-duration:.6s}
+.mole .collected .mole-sprite,.mole .collected .word-sign{animation:none}
+.mode-badge{display:inline-block;background:#463655;border:1px solid #b79b73;border-radius:8px;padding:6px 12px;margin-bottom:10px;color:#ffe4a2;font-size:18px}
+.arcade-instructions .pop-instruction{font-size:18px;color:#ffe4a2}.mode-explanation{padding:12px;border-left:3px solid #edcf85;background:#392b43;line-height:1.4}
+/* Only the beam reveals uncollected books. No persistent discovery highlight. */
+.flashlight .arcade-word:not(.discovered){opacity:.025;z-index:2}
+.flashlight .discovered{opacity:var(--fading);z-index:3}
+.flashlight .discovered .word-sign{box-shadow:0 0 12px #ebce8d55}
+.library-shade{z-index:4;background:radial-gradient(circle 165px at var(--beam-x) var(--beam-y),transparent 12%,#100d2277 72%,#080717f5 100%)}
+.flashlight .collected{opacity:0!important}
+.review-flip{display:flex;flex-direction:column;align-items:center;justify-content:space-between;min-height:140px;gap:7px}
+.review-flip .review-atlas,.review-flip img,.review-flip .review-curtain,.review-flip .review-icon{display:inline-grid;place-items:center;width:92px;height:92px;max-width:100%;aspect-ratio:1;object-fit:contain;flex:0 0 92px}
+.review-card{justify-content:space-between}
+@media(max-width:700px){.mole .arcade-word{height:220px;top:auto!important;margin:12px 1%}.mole .arcade-word .mole-sprite{width:175px;height:175px}.mole .arcade-word:nth-of-type(even){top:auto}.mole .arcade-word .word-sign{font-size:30px;padding:8px}.mole-rise{bottom:20px}}
+@media(prefers-reduced-motion:reduce){.mole .burrowed .mole-rise{transform:none}}

@@ -1,6 +1,9 @@
 import {bookWords} from './bank.mjs?v=arcade1';
 
 const soundNames={
+  ts:'/ts/ as in cats',ds:'/dz/ as in beds','y-head':'/y/ as in yes',
+  f:'/f/ as in puff',s:'/s/ as in miss',l:'/l/ as in bell',k:'/k/ as in duck',j:'/j/ as in badge',
+  sh:'/sh/ as in ship',ch:'/ch/ as in chin',ng:'/ng/ as in ring',n:'/n/ as in fan',m:'/m/ as in ham',
   a:'short a',e:'short e',i:'short i',o:'short o',u:'short u',
   'long-a':'long a','long-e':'long e','long-i':'long i','long-o':'long o',
   yoo:'long u as in cube','oo-long':'oo as in moon','oo-short':'oo as in book',
@@ -16,7 +19,7 @@ function entrySound(entry,book){
     if(p==='u_e'||p==='ue'||p==='ew')return yoo.has(entry.word.toLowerCase())?'yoo':'oo-long';
     return longSounds[p]??p;
   }
-  return book===3&&['sc','sk'].includes(p)?'sk':p;
+  return book===3&&['sc','sk'].includes(p)?'sk':book===1?({c:'k',ph:'f'}[p]??p):p;
 }
 const extra={
   1:{
@@ -128,7 +131,8 @@ export function practicePool(book,level){
   });
 }
 export function buildArcadeQuestion({book,level,kind,topic,game},choose){
-  const pool=practicePool(book,level);
+  const ambiguous=new Set(['bow','sow','row','read','tune','new','knew','due','dew']);
+  const pool=practicePool(book,level).filter(e=>kind==='spelling'||!ambiguous.has(e.word));
   const field=kind==='spelling'?'pattern':'sound';
   const targets=pool.filter(e=>e[field]===topic);
   const exemplar=targets[0];
@@ -139,11 +143,15 @@ export function buildArcadeQuestion({book,level,kind,topic,game},choose){
     if(Number(book)===2)return (entry.group==='finals')===(exemplar.group==='finals');
     return (entry.group==='y')===(exemplar.group==='y');
   };
-  const other=pool.filter(sameDomain).filter(e=>e[field]!==topic&&!targets.some(t=>t.word===e.word));
+  let other=pool.filter(sameDomain).filter(e=>e[field]!==topic&&!targets.some(t=>t.word===e.word));
+  if(kind==='spelling'&&Number(book)===2){
+    const sameSound=other.filter(e=>e.sound===exemplar?.sound);
+    if(sameSound.length)other=sameSound;
+  }
   if(!targets.length||!other.length)throw new Error('Choose another topic for this round.');
   const targetCount=game==='mole'?({simple:2,medium:3,difficult:4}[level]):({simple:3,medium:4,difficult:5}[level]);
   const matching=choose(targets,targetCount);
   const distractors=choose(other,game==='mole'?1:targetCount);
   const options=[...matching,...distractors].sort(()=>Math.random()-.5);
-  return {options,position:Number(book)===1?(exemplar.group==='vowels'?'middle':exemplar.group==='endings'?'end':'start'):Number(book)===2?(exemplar.group==='finals'?'end':'vowel'):(exemplar.group==='y'?'final y':'start'),correct:new Set((game==='mole'?distractors:matching).map(e=>e.word)),field,topic};
+  return {options,position:Number(book)===1?(exemplar.group==='vowels'?'middle':exemplar.group==='endings'?'end':exemplar.group==='digraphs'?'anywhere':'start'):Number(book)===2?(exemplar.group==='finals'?'end':'vowel'):(exemplar.group==='y'?'final y':'start'),correct:new Set((game==='mole'?distractors:matching).map(e=>e.word)),field,topic};
 }
