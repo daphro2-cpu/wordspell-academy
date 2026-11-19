@@ -1,9 +1,12 @@
-import {catalog} from './bank.mjs?v=book2-textbook';
-import {modes,levels,createRound,sortingBoard,practiceContrasts,shuffle,choiceLabel,isVowelTile} from './engine.mjs?v=difficulty';
+import {resemblesWord} from './spoken-word.mjs?v=arcade1';
+import {mountArcade,registerArcadeClips} from './arcade.mjs?v=arcade1';
+import {playSpinSound,playReelStop,stopSpinSound,playVoiceSuccess} from './effects.mjs?v=arcade1';
+import {catalog} from './bank.mjs?v=arcade1';
+import {modes,levels,createRound,sortingBoard,practiceContrasts,shuffle,choiceLabel,isVowelTile} from './engine.mjs?v=arcade1';
 
 import {missions,flightMission} from './missions.mjs?v=listen-sort';
 import {makeStory} from './story.mjs?v=difficulty';
-import {reviewPicture} from './review.mjs?v=flight-pictures';
+import {reviewPicture} from './review.mjs?v=storybook-clues';
 
 const by=id=>document.getElementById(id);
 const lobby=by('lobby'), play=by('play'), guide=by('guide');
@@ -55,7 +58,7 @@ const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;
 const speech='speechSynthesis' in window?window.speechSynthesis:null;
 const AudioContextClass=window.AudioContext??window.webkitAudioContext;
 const canUseMic=Boolean(AudioContextClass&&navigator.mediaDevices?.getUserMedia);
-const loudEnough=.05;
+const loudEnough=.035;
 const voiceGoal=75;
 let mic;
 const voiceStorage='wordspell-voice-v2';
@@ -99,6 +102,7 @@ function stopListening(){
   const session=mic;
   mic=null;
   cancelAnimationFrame(session.frame);
+  if(session.recognizer){session.recognizer.onend=null;session.recognizer.abort();}
   session.stream?.getTracks().forEach(track=>track.stop());
   session.context?.close().catch(()=>{});
 }
@@ -231,6 +235,7 @@ function start(settings) {
   play.querySelector('h1').focus({preventScroll:true});
 }
 function returnToLobby(){
+  stopSpinSound();
   stopSortClock();
   stopFlightRun();
   stopListening();
@@ -385,6 +390,7 @@ function sortWord(portal) {
 function flightPicture(word){
   const picture=reviewPicture(word);
   if(!picture)return '';
+  if(picture.atlas)return '<span class="storybook-clue" aria-hidden="true" style="background-position:'+picture.x+'% '+picture.y+'%"></span>';
   return picture.src?'<img src="'+esc(picture.src)+'" alt="" class="flying-object">':
     '<span class="flight-picture-icon" aria-hidden="true">'+esc(picture.icons)+'</span>';
 }
@@ -693,10 +699,10 @@ function readControls(q){
   const next=active.index+1===active.questions.length?'Finish':'Next word';
   return `<div class="read-controls">
     ${fallback?'':`<div class="voice-meter ${ready?'heard':''}" style="--voice-goal:${voiceGoal}%">
-      <div class="voice-meter-top"><strong id="voice-meter-label">Voice power</strong><span>${ready?'✓ Goal reached!':'Aim for the star!'}</span></div>
+      <div class="voice-meter-top"><strong id="voice-meter-label">Voice power</strong><span>${ready?'✓ You did it!':'Aim for the star!'}</span></div>
       <div class="voice-track"><meter id="voice-level" aria-labelledby="voice-meter-label" min="0" max="100" value="${ready?100:0}"></meter><span class="voice-goal" aria-hidden="true">★</span></div>
     </div>`}
-    <p class="mic-status" role="status" tabindex="-1">${esc(status)}</p>
+    <p class="mic-status ${ready?'voice-success':''}" role="status" tabindex="-1">${esc(status)}</p>
     ${fallback||ready?'':`<button class="quiet" type="button" data-action="${mic?'cancelMic':'readMic'}">${mic?'Stop mic':'Start mic'}</button>`}
     <div class="teacher-check" role="group" aria-label="Teacher check"><strong>Teacher check</strong>
       <button class="primary" type="button" data-action="readCorrect" ${ready||fallback?'':'disabled'}>${next} →</button>
@@ -707,7 +713,7 @@ async function startMic(){
   if(!canUseMic||mic||!active.spin||active.verdict!==null||active.micReady||active.micUnavailable)return;
   stopSound();
   const round=active;
-  const session={};
+  const session={heard:false,matched:false};
   mic=session;
   round.micMessage='Allow the mic when your browser asks.';
   if(round.spin===true){
@@ -737,20 +743,48 @@ async function startMic(){
       const meter=by('voice-level');
       if(meter)meter.value=Math.min(100,voiceGoal*rms/loudEnough);
       heardSince=rms>=loudEnough?(heardSince??now):null;
-      if(heardSince!==null&&now-heardSince>=120){
-        stopListening();
-        round.micReady=true;
-        round.micMessage='Loud enough! Your teacher can check your reading.';
-        render();
-        focusOption('[data-action=readCorrect]');
-        return;
+      if(heardSince!==null&&now-heardSince>=150){
+        session.heard=true;
+        if(session.matched){finishSpokenWord(round);return;}
+        const status=play.querySelector('.mic-status');
+        if(status&&!session.recognitionUnavailable)status.textContent='I can hear you! Say the whole word: '+question().entry.word+'.';
       }
       session.frame=requestAnimationFrame(listen);
     };
     stream.getAudioTracks().forEach(track=>track.addEventListener('ended',()=>{
       if(mic===session)micUnavailable(round);
     }));
-    round.micMessage='Use a strong voice! Say the sounds, then read the word.';
+    const Recognition=window.SpeechRecognition??window.webkitSpeechRecognition;
+    if(Recognition){
+      const recognizer=new Recognition();
+      session.recognizer=recognizer;
+      recognizer.lang='en-US';recognizer.interimResults=true;recognizer.continuous=true;recognizer.maxAlternatives=3;
+      recognizer.onresult=event=>{
+        if(mic!==session||active!==round)return;
+        const results=Array.from(event.results).slice(event.resultIndex);
+        const said=results.flatMap(result=>Array.from(result).map(a=>a.transcript));
+        if(said.some(text=>resemblesWord(text,question().entry.word))){
+          session.matched=true;
+          finishSpokenWord(round);
+        }else{
+          round.micMessage='I heard “'+said[0]?.trim()+'”. Try saying '+question().entry.word+' again.';
+          const status=play.querySelector('.mic-status');if(status)status.textContent=round.micMessage;
+        }
+      };
+      const fallback=()=>{
+        if(mic!==session)return;
+        session.recognitionUnavailable=true;
+        round.micUnavailable=true;
+        round.micMessage='Word checking is unavailable here. Teacher: listen to the whole word and confirm below.';
+        render();
+      };
+      recognizer.onerror=fallback;
+      recognizer.onend=()=>{if(mic===session&&!session.matched&&!session.recognitionUnavailable){try{recognizer.start();}catch{fallback();}}};
+      try{recognizer.start();}catch{fallback();}
+    }else{
+      session.recognitionUnavailable=true;round.micUnavailable=true;
+    }
+    round.micMessage=session.recognitionUnavailable?'Word checking is unavailable here. Teacher: listen to the whole word and confirm below.':'Say each sound, then read the whole word clearly.';
     if(round.spin===true){
       render();
       play.querySelector('.mic-status')?.focus({preventScroll:true});
@@ -759,6 +793,14 @@ async function startMic(){
   } catch {
     if(mic===session)micUnavailable(round);
   }
+}
+function finishSpokenWord(round){
+  stopListening();
+  round.micReady=true;
+  round.micMessage='Your voice powered the bridge! You can stop now. Teacher: check the reading, then click Next.';
+  playVoiceSuccess();
+  render();
+  focusOption('[data-action=readCorrect]');
 }
 function micUnavailable(round){
   stopListening();
@@ -955,7 +997,7 @@ function wordReview(entries,storyOnly=false){
       const clue=entry.nonsense?null:reviewPicture(word);
       const picture=storyOnly&&!clue?.src?null:clue;
       const opened=active.revealed.has(word);
-      const art=picture?.src?'<img alt="" src="'+esc(picture.src)+'">':'<span class="review-icon" aria-hidden="true">'+esc(picture?.icons??'')+'</span>';
+      const art=picture?.atlas?'<span class="storybook-clue review-atlas" aria-hidden="true" style="background-position:'+picture.x+'% '+picture.y+'%"></span>':picture?.src?'<img alt="" src="'+esc(picture.src)+'">':'<span class="review-icon" aria-hidden="true">'+esc(picture?.icons??'')+'</span>';
       return `<div class="review-card">${picture?'<button type="button" class="review-flip" data-review-word="'+esc(word)+'" aria-expanded="'+opened+'">'+(opened?art:'<span class="review-curtain" aria-hidden="true">✧</span>')+'<strong>'+esc(word)+'</strong></button>':'<strong class="review-text">'+esc(word)+'</strong>'}
         ${picture?.hint&&opened?'<p>'+esc(picture.hint)+'</p>':''}${entry.nonsense?'':audioButton(word,'Hear it')}</div>`;
     }).join('')}</div></section>`;
@@ -1108,16 +1150,20 @@ const actions={
     const session=active;
     const motion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     active.spin='turning';
-    startMic();
+    playSpinSound();
     render();
     const reels=[...play.querySelectorAll('[data-reel]')];
     reels.forEach((reel,index)=>setTimeout(()=>{
       if(active!==session||active.spin!=='turning')return;
       reel.classList.remove('reel-running');
       reel.classList.add('reel-stopped');
+      playReelStop(index);
       if(index===reels.length-1){
+        stopSpinSound();
+        playReelStop(index+1);
         active.spin=true;
         render();
+        setTimeout(()=>{if(active===session&&active.spin===true)startMic();},250);
         play.querySelector('.mic-status')?.focus({preventScroll:true});
       }
     },motion?60+index*70:520+index*260));
@@ -1354,3 +1400,19 @@ try {
     if(fontRequest===0)localStorage.removeItem(classroomFontKey);
   });
 } catch {}
+
+const atmosphere=document.createElement('div');
+atmosphere.className='map-atmosphere';
+atmosphere.setAttribute('aria-hidden','true');
+atmosphere.innerHTML=Array.from({length:22},(_,i)=>'<span class="map-star" style="left:'+(23+(i*17)%70)+'%;top:'+(2+(i*7)%19)+'%;--duration:'+(3+i%5)+'s;--delay:-'+(i*.73)+'s">✦</span>').join('')+
+  Array.from({length:5},(_,i)=>'<i class="map-smoke" style="--delay:-'+i*1.1+'s"></i>').join('')+
+  [[18,25],[20,36],[45,61],[49,64],[80,63],[83,61]].map(([x,y],i)=>'<i class="map-window" style="--x:'+x+'%;--y:'+y+'%;--delay:-'+i+'s"></i>').join('');
+document.querySelector('.map').prepend(atmosphere);
+registerArcadeClips(['neck', 'fish', 'chess', 'puff', 'lodge', 'bats', 'string', 'cut', 'snap', 'cue', 'foot', 'street', 'fly', 'phone', 'dry', 'flew', 'bike', 'skate', 'sled', 'stop', 'mat', 'ridge', 'pat', 'my', 'fudge', 'pass', 'long', 'crew', 'shop', 'book', 'jam', 'glad', 'witch', 'doll', 'that', 'drum', 'boat', 'me', 'note', 'pie', 'rain', 'plane', 'back', 'play', 'gate', 'chip', 'rule', 'puppy', 'pin', 'plant', 'met', 'baby', 'split', 'cake', 'cat', 'green', 'cute', 'cook', 'hutch', 'cube', 'cot', 'flap', 'story-sled-medium', 'catch', 'frog', 'ring', 'plan', 'map', 'match', 'skip', 'pool', 'fang', 'hot', 'blotch', 'sick', 'story-sled-difficult', 'rang', 'time', 'sun', 'trap', 'chop', 'ham', 'roll', 'kite', 'grab', 'stretch', 'story-sled-simple', 'huff', 'crab', 'beach', 'red', 'chin', 'train', 'spot', 'toll', 'ben', 'spring', 'muss', 'coat', 'sit', 'sip', 'few', 'flag', 'step', 'swim', 'spray', 'hill', 'team', 'pig', 'beds', 'bat', 'these', 'stove', 'bunny', 'pen', 'edge', 'smile', 'home', 'bed', 'yellow', 'sin', 'etch', 'yell', 'fetch', 'theme', 'spin', 'brick', 'snow', 'float', 'splash', 'tie', 'brave', 'tape', 'hats', 'cap', 'scab', 'sleep', 'cup', 'strap', 'ten', 'sock', 'ram', 'bridge', 'press', 'clue', 'yard', 'clip', 'ball', 'block', 'cliff', 'kiss', 'light', 'night', 'stripe', 'clap', 'smell', 'pete', 'ran', 'glass', 'graph', 'sing', 'spoon', 'sang', 'story-magic-v2', 'dream', 'snack', 'grow', 'trail', 'boss', 'bell', 'doff', 'scrape', 'slide', 'skin', 'duck', 'zip', 'look', 'moon', 'this', 'gull', 'candy', 'badge', 'wall', 'mule', 'yes', 'strip', 'thin', 'gaff', 'food', 'bone', 'soon', 'gap', 'tall', 'dress', 'miss', 'pot', 'rope', 'tiff', 'grin', 'ship', 'thick', 'lids', 'sky', 'crack', 'suit', 'seeds', 'day', 'rock', 'fan', 'van', 'scrap', 'scrub', 'fruit', 'trip', 'story-short-v2', 'story-mixed-v2', 'flute', 'happy', 'seed', 'cats', 'black', 'slip', 'fill', 'den', 'spruce', 'shy']);
+mountArcade({
+  getSettings:()=>({...selection}),
+  enter:()=>{returnToLobby();lobby.hidden=true;play.hidden=false;history.replaceState(null,'','#arcade');play.scrollIntoView({block:'start'});},
+  exit:returnToLobby,
+  speak:word=>say(word),
+  stopSpeech:stopSound
+});

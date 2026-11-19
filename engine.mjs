@@ -1,4 +1,4 @@
-import {bookWords, labels} from './bank.mjs?v=book2-textbook';
+import {bookWords, labels} from './bank.mjs?v=arcade1';
 
 export const modes = [
   {id:'listen', title:'Echo Tower', skill:'Hear & identify', description:'Listen closely and choose the sound you hear.', icon:'◖))', color:'mint'},
@@ -62,6 +62,7 @@ export function practiceContrasts(book) {
 
 export function matchFocus(book,group,entry) {
   if(group==='all') return true;
+  if(book===2&&group==='longMixed')return ['magic','teams'].includes(entry.group);
   const contrast=contrasts[book][group];
   return contrast ? entry.group===contrast[0]&&contrast.slice(2).includes(entry.pattern) : entry.group===group;
 }
@@ -143,6 +144,7 @@ function uniqueWords(words) {
 }
 function comparable(book,e,all) {
   if (book===1 && e.group==='vowels') return all.filter(x=>x.group==='vowels');
+  if(book===2&&['magic','teams'].includes(e.group))return all.filter(x=>['magic','teams'].includes(x.group));
   return all.filter(x=>x.group===e.group);
 }
 
@@ -223,7 +225,7 @@ function spellingMask(entry) {
 export function sortingBoard({book,group,level},rng=Math.random) {
   const entries=bookWords[book].filter(entry=>matchFocus(book,group,entry));
   const family=shuffle([...new Set(entries.map(entry=>entry.group))],rng)[0];
-  const pool=entries.filter(entry=>entry.group===family);
+  const pool=book===2&&group==='longMixed'?entries:entries.filter(entry=>entry.group===family);
   const getKey=group==='all-oll'
     ? entry=>entry.pattern==='oll-long'?'like roll':'like ball or doll'
     : entry=>soundKey(book,entry);
@@ -304,7 +306,7 @@ export function createRound({book, mode, level, group='all', review},rng=Math.ra
     else if(mode!=='blend') pool.sort((a,b)=>Math.max(0,a.tiles.length-4)-Math.max(0,b.tiles.length-4));
   }
   const selected=[];
-  if(group==='all'&&!review) {
+  if((group==='all'||group==='longMixed')&&!review) {
     for(const key of shuffle([...new Set(pool.map(e=>e.group))],rng)) {
       const first=pool.find(e=>e.group===key);
       if(first) selected.push(first);

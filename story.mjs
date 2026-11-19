@@ -1,4 +1,4 @@
-import {bookWords} from './bank.mjs?v=book2-textbook';
+import {bookWords} from './bank.mjs?v=arcade1';
 import {choiceLabel, matchFocus, shuffle} from './engine.mjs?v=book2-textbook';
 
 const mixedStory=[

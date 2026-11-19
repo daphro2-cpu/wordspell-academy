@@ -3,7 +3,7 @@ const catalog = {
     vowels:'Short vowels', pairs:'Similar consonants', digraphs:'Digraphs', endings:'Ending sounds'
   }},
   2: { title:'Spelling patterns', summary:'FLOSS, final spellings, Magic E and vowel teams', color:'peach', art:'cake', groups:{
-    finals:'FLOSS & final spellings', magic:'Magic E', teams:'Vowel teams', oo:'Long and short oo'
+    finals:'FLOSS & final spellings', magic:'Magic E', teams:'Vowel teams', longMixed:'Long vowels mixed', oo:'Long and short oo'
   }},
   3: { title:'Blends & the letter Y', summary:'Two- and three-letter blends and the sounds of y', color:'lilac', art:'fly', groups:{
     two:'Two-letter blends', three:'Three-letter blends', mixed:'Blends with long vowels', y:'The sounds of y'
