@@ -1,11 +1,11 @@
 import {resemblesWord} from './spoken-word.mjs?v=arcade1';
-import {mountArcade,registerArcadeClips} from './arcade.mjs?v=arcade1';
+import {mountArcade,registerArcadeClips} from './arcade.mjs?v=arcade2';
 import {playSpinSound,playReelStop,stopSpinSound,playVoiceSuccess} from './effects.mjs?v=arcade1';
 import {catalog} from './bank.mjs?v=arcade1';
 import {modes,levels,createRound,sortingBoard,practiceContrasts,shuffle,choiceLabel,isVowelTile} from './engine.mjs?v=arcade1';
 
 import {missions,flightMission} from './missions.mjs?v=listen-sort';
-import {makeStory} from './story.mjs?v=difficulty';
+import {makeStory} from './story.mjs?v=arcade1';
 import {reviewPicture} from './review.mjs?v=storybook-clues';
 
 const by=id=>document.getElementById(id);

@@ -43,3 +43,9 @@
 @media(max-width:500px){.flying-tag .storybook-clue{width:42px;height:42px}}
 
 .arcade-word .word-sign{font-size:clamp(26px,calc(260px / var(--letters,5)),50px)}
+
+@media(min-width:701px){
+  .arcade-word{width:calc(90% / var(--columns));left:calc(5% + var(--column)*90% / var(--columns))}
+}
+.flashlight .discovered{z-index:6}
+.flashlight .arcade-word:not(.discovered){opacity:.3}
