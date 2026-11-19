@@ -1,8 +1,8 @@
-import {cueFor} from './sound-cues.mjs?v=vowels4';
+import {cueFor} from './sound-cues.mjs?v=pace6';
 import {createBookReader} from './book-reading.mjs?v=teacher5';
 import {playVoiceSuccess} from './effects.mjs?v=arcade1';
 import {moleIsUp} from './burrow-state.mjs?v=burrows1';
-import {availableTopics,buildArcadeQuestion,labelSound,labelPattern,practicePool} from './arcade-bank.mjs?v=reading3b';
+import {availableTopics,buildArcadeQuestion,labelSound,labelPattern,practicePool} from './arcade-bank.mjs?v=pace6';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const shuffle=a=>[...a].sort(()=>Math.random()-.5);
 const music=new Audio('./audio/warm-magic.mp3');
@@ -57,7 +57,7 @@ export function mountArcade({getSettings,enter,exit,speak,stopSpeech}){
   function launch(game){
     cleanup();enter();
     const settings=getSettings();
-    current={...settings,game,kind:'sound',task:'all',topic:null,phase:'setup',round:0,score:0,missed:[],retry:[],found:new Set(),revealed:new Set(),music:true,paused:false,timed:true,message:'',focusIndex:0,readWords:new Set(),bookFlying:false,manualReading:false};
+    current={...settings,game,kind:'sound',task:'all',topic:null,phase:'setup',round:0,score:0,missed:[],retry:[],found:new Set(),revealed:new Set(),music:true,paused:false,timed:true,message:'',focusIndex:0,readWords:new Set(),bookFlying:false,manualReading:false,wave:0,pinnedSound:null,lastSpokenCue:null};
     const topics=availableTopics(current.book,current.kind,current.game);
     current.topic=topics[0]?.key;
     render();
@@ -96,7 +96,7 @@ export function mountArcade({getSettings,enter,exit,speak,stopSpeech}){
       const clue=q.clue??(current.game==='mole'&&current.kind==='sound'?'Whack all the matches. Leave the other sounds alone.':current.game==='mole'?'The others '+(current.kind==='spelling'?'use '+topic+'.':(q.position==='vowel'?'have the '+topic+' sound.':q.position==='middle'?'have '+topic+' in the middle.':q.position==='final y'?'have '+topic+'.':q.position==='anywhere'?'contain the '+topic+' sound.':'have '+topic+' at the '+q.position+'.')):'Move the light to reveal a word. It goes dark when the beam moves away. Tap every match.');
       const canNext=current.phase==='cleared';
       const columns=current.game==='flashlight'?Math.ceil(q.options.length/2):q.options.length;
-      content='<div class="arcade-instructions"><strong class="mode-badge">'+(current.kind==='sound'?'SOUND · Compare what you hear':'SPELLING · Compare the written letters')+'</strong><h2>'+esc(prompt)+'</h2><p>'+esc(clue)+'</p>'+(current.game==='mole'?'<p class="pop-instruction">Watch the holes. Whack every matching word. Missed moles come back!</p>':'')+'</div><div class="arcade-toolbar"><button type="button" class="quiet" data-arcade-action="pause">'+(current.paused?'Resume':'Pause')+'</button><button type="button" class="quiet" data-arcade-action="music">♫ Music '+(current.music?'on':'off')+'</button><button type="button" class="quiet" data-arcade-action="help">Help me compare</button><span>Round '+Math.min(current.round+1,current.total)+' of '+current.total+'</span>'+(current.timed?'<span class="arcade-clock" role="timer">Time <b>'+Math.ceil(current.remaining/1000)+'</b> s</span>':'')+'</div><div class="arcade-field '+current.game+' '+(current.paused?'paused':'')+' '+(canNext?'cleared':'')+' '+(current.phase==='expired'?'expired':'')+'" style="--beam-x:50%;--beam-y:50%;--columns:'+columns+'" aria-label="'+(current.game==='mole'?'Mole garden':'Explore the library with your flashlight')+'">'+
+      content='<div class="arcade-instructions"><strong class="mode-badge">'+(current.kind==='sound'?'SOUND · Compare what you hear':'SPELLING · Compare the written letters')+'</strong><h2>'+esc(prompt)+'</h2><p>'+esc(clue)+'</p>'+(current.game==='mole'?'<p class="pop-instruction">Watch the holes. Whack every matching word. Missed moles come back!</p>':'')+'</div><div class="arcade-toolbar"><button type="button" class="quiet" data-arcade-action="pause">'+(current.paused?'Resume':'Pause')+'</button><button type="button" class="quiet" data-arcade-action="music">♫ Music '+(current.music?'on':'off')+'</button><button type="button" class="quiet" data-arcade-action="help">Help me compare</button><span>Round '+Math.min(current.round+1,current.total)+' of '+current.total+(current.game==='mole'&&current.kind==='sound'&&current.task==='all'?' · Set '+(current.wave+1)+' of 3':'')+'</span>'+(current.timed?'<span class="arcade-clock" role="timer">Time <b>'+Math.ceil(current.remaining/1000)+'</b> s</span>':'')+'</div><div class="arcade-field '+current.game+' '+(current.paused?'paused':'')+' '+(canNext?'cleared':'')+' '+(current.phase==='expired'?'expired':'')+'" style="--beam-x:50%;--beam-y:50%;--columns:'+columns+'" aria-label="'+(current.game==='mole'?'Mole garden':'Explore the library with your flashlight')+'">'+
         '<div class="library-door" aria-hidden="true">'+(canNext?'✦':'')+'</div>'+
         q.options.map((entry,index)=>'<button type="button" class="arcade-word '+(current.found.has(entry.word)?'collected':'')+' '+(current.revealed.has(entry.word)?'discovered':'')+'" style="--column:'+(current.game==='mole'?index%3:index%columns)+';--row:'+Math.floor(index/(current.game==='mole'?3:columns))+';--delay:'+index*.17+'s" data-arcade-word="'+index+'" '+(current.paused||current.phase!=='playing'||current.found.has(entry.word)?'disabled':'')+' aria-label="'+esc(entry.word)+'">'+(current.game==='mole'?'<span class="burrow-back" aria-hidden="true"></span><span class="mole-window"><span class="mole-rise"><span class="mole-sprite" aria-hidden="true"></span>':'<span class="book-spine" aria-hidden="true"></span>')+'<span class="word-sign" style="--letters:'+entry.word.length+'">'+esc(entry.word)+'</span>'+(current.game==='mole'?'</span></span><span class="burrow-front" aria-hidden="true"></span>':'')+'</button>').join('')+
         (current.game==='flashlight'?'<div class="library-shade" aria-hidden="true"></div><div class="fox-walker" aria-hidden="true"><span class="fox-sprite"></span><span class="torch-beam"></span></div>':'')+
@@ -135,6 +135,9 @@ export function mountArcade({getSettings,enter,exit,speak,stopSpeech}){
   }
   function announceQuestion(){
     const state=current,request=++announcement,cue=cueFor(state.question,state.game,state.kind);
+    const signature=JSON.stringify(cue);
+    if(state.game==='mole'&&signature===state.lastSpokenCue){state.speaking=false;state.lastTick=performance.now();setMusic();return;}
+    state.lastSpokenCue=signature;
     const urls=cue.files.map(f=>'./audio/arcade-cues/'+f+'.mp3');
     if(cue.example&&clipWords.has(cue.example))urls.push('./audio/ana/'+encodeURIComponent(cue.example)+'.mp3');
     state.speaking=true;setMusic();
@@ -144,7 +147,7 @@ export function mountArcade({getSettings,enter,exit,speak,stopSpeech}){
     next();
   }
   function begin(){
-    current.total={simple:6,medium:8,difficult:10}[current.level];current.collected=[];
+    current.total=(current.game==='mole'&&current.kind==='sound'&&current.task==='all'?{simple:2,medium:3,difficult:4}:{simple:6,medium:8,difficult:10})[current.level];current.collected=[];
     try{resetQuestion();}catch(error){current.phase='setup';current.message=error.message;render();return;}
     clearInterval(clock);
     clock=setInterval(()=>{
@@ -217,7 +220,10 @@ export function mountArcade({getSettings,enter,exit,speak,stopSpeech}){
   }
   function nextQuestion(){
     if(!current||current.phase!=='cleared')return;
-    current.round++;
+    if(current.game==='mole'&&current.kind==='sound'&&current.task==='all'&&current.wave<2){
+      current.wave++;current.pinnedSound=current.question.topic;resetQuestion();return;
+    }
+    current.wave=0;current.pinnedSound=null;current.round++;
     if(current.round>=current.total){current.phase='done';render();bookReader.start();return;}
     const revisit=current.retry.find(q=>q.at<=current.round);
     if(revisit){current.retry.splice(current.retry.indexOf(revisit),1);current.question=revisit.question;resetQuestion(true);}

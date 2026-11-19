@@ -143,11 +143,11 @@ export function spellingFocus(pattern,sound){
  const focus=(sound===pattern?names[pattern]:null)??labelSound(sound);
  return focus+' — spelled '+labelPattern(pattern);
 }
-export function buildArcadeQuestion({book,level,kind,topic,game,task='all'},choose){
+export function buildArcadeQuestion({book,level,kind,topic,game,task='all',pinnedSound=null},choose){
  if(kind==='spelling'&&game==='mole')return ruleQuestion({book,level,kind,topic,game},choose);
  const spec=contrastFor(book,topic);
  let contrast=spec?.[2]??null;
- if(spec)topic=contrast[Math.floor(Math.random()*contrast.length)];
+ if(spec)topic=contrast.includes(pinnedSound)?pinnedSound:contrast[Math.floor(Math.random()*contrast.length)];
  if(!spec&&Number(book)===1){if(['n','ng','m'].includes(topic))contrast=['n','ng','m'];if(['ts','ds'].includes(topic))contrast=['ts','ds'];if(['sh','ch'].includes(topic))contrast=['sh','ch'];}
   let targetSound=null;
   if(kind==='spelling'){const parts=topic.split('::');topic=parts[0];targetSound=parts[1]??null;}
