@@ -1,5 +1,5 @@
 import {resemblesWord} from './spoken-word.mjs?v=arcade1';
-import {mountArcade,registerArcadeClips} from './arcade.mjs?v=burrows1';
+import {mountArcade,registerArcadeClips} from './arcade.mjs?v=reading3';
 import {playSpinSound,playReelStop,stopSpinSound,playVoiceSuccess} from './effects.mjs?v=arcade1';
 import {catalog} from './bank.mjs?v=arcade1';
 import {modes,levels,createRound,sortingBoard,practiceContrasts,shuffle,choiceLabel,isVowelTile} from './engine.mjs?v=arcade1';
@@ -628,6 +628,7 @@ function bridgeProgress(count){
   return `<div class="bridge-scene">
     <span class="bridge-count">${finished} of ${count} planks</span>
     <div class="bridge-deck ${finished===count?'crossed':''}" aria-hidden="true">
+      ${finished===count?'<span class="finn-crossing"><span class="finn-walk-sprite"></span></span>':''}
       <div class="bridge-track" style="--plank-count:${count}">${Array.from({length:count},(_,i)=>{
         const placing=i===finished-1&&active.verdict===true;
         return '<span class="bridge-slot"><i class="'+(i<finished?'plank':'')+(placing?' fresh':'')+'"></i>'+
@@ -1004,19 +1005,23 @@ function wordReview(entries,storyOnly=false){
         ${picture?.hint&&opened?'<p>'+esc(picture.hint)+'</p>':''}${entry.nonsense?'':audioButton(word,'Hear it')}</div>`;
     }).join('')}</div></section>`;
 }
+function potionFinale(){
+  const words=[...new Set(active.questions.map(q=>q.entry.word))];
+  return '<section class="potion-finale" aria-label="The potion brews and releases your words"><img class="brewing-cauldron" src="./assets/potion-brewing.webp" alt="A bubbling magical cauldron">'+words.map((word,i)=>'<span class="potion-word-bubble" style="--drift-x:'+((i%3-1)*150)+'px;--drift-y:'+(-140+Math.floor(i/3)*62)+'px;--brew-delay:'+(2+i*.32)+'s">'+esc(word)+'</span>').join('')+'<p class="brewing-caption">Your words are brewing! Read them as they pop out.</p></section>';
+}
 function result(m){
   const allCorrect=active.score===active.questions.length;
   const mission=active.settings.variant==='flight'?flightMission:missions[m.id];
   const list=active.mistakes.length?'<h3>Words to revisit</h3><ul class="review-list">'+active.mistakes.map(e=>'<li>'+esc(e.word)+'</li>').join('')+'</ul>':'';
   const review=active.mistakes.length?'<button class="primary" type="button" data-action="review">Practice missed words</button>':'';
   const badge=active.earned?'<span class="medal">✦ Room rune collected</span>':'';
-  const reveal=m.id==='segment'&&allCorrect?(active.hatched===true
+  const reveal=m.id==='segment'&&allCorrect?potionFinale()+(active.hatched===true
     ? '<div class="dragon-hatch" role="img" aria-label="A baby dragon hatched"></div><p class="potion-reveal" tabindex="-1" id="hatch-result">You hatched a baby dragon!</p>'
     : cauldron()+(active.hatched==='hatching'?'<p class="potion-reveal" role="status">Look! The egg is moving…</p>':'<button class="primary" type="button" data-action="hatch">Pour the potion on the egg</button>')):
     active.settings.variant==='flight'&&allCorrect?'<p class="potion-reveal">Everything is back in its place!</p>':
     m.id==='sort'?'<p class="potion-reveal">The clouds are gone. All the words are home!</p>'+(active.sortStars?'<p>★ '+active.sortStars+' bonus '+(active.sortStars===1?'star':'stars')+'</p>':''):
     m.id==='spell'?swordView()+'<p class="potion-reveal">The magic sword is ready!</p>':
-    m.id==='blend'&&allCorrect?bridgeProgress(active.questions.length)+'<p class="potion-reveal">Finn made it across the bridge!</p>':
+    m.id==='blend'&&allCorrect?bridgeProgress(active.questions.length)+'<p class="potion-reveal">Watch Finn cross the bridge you built!</p>':
     m.id==='listen'&&!active.settings.variant&&active.earned?'<div class="bell-reveal" aria-hidden="true">✦</div><p>Orla can ring her bell again!</p>':'';
   const help=active.settings.review?'Review complete.':allCorrect?'You got every word right.':'Try the tricky words again.';
   return `<article class="stage mission scene-${m.id}"><div class="result-scene"><div class="task">

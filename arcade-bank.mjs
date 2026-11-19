@@ -1,4 +1,5 @@
-import {ruleTopics,ruleQuestion} from './arcade-rules.mjs?v=arcade4';
+import {soundContrasts,contrastFor,targetCategory,spellingCategory} from './arcade-focus.mjs?v=focus2';
+import {ruleTopics,ruleQuestion} from './arcade-rules.mjs?v=reading3';
 import {bookWords} from './bank.mjs?v=arcade1';
 
 const soundNames={
@@ -24,6 +25,7 @@ function entrySound(entry,book){
 }
 const extra={
   1:{
+    p:['p','pig pen pin pot pan pet peg pit pup pack'],b:['b','bat bed bag big bug bin bun bus back'],t:['t','ten tin tap top tub tag tip tan'],d:['d','den dog dig dot dad dip duck'],k:['k','kit kid kin kick king keep'],g:['g','gap gas get gum got gate'],f:['f','fan fin fit fog fun fat'],v:['v','van vet vest vat vine vote'],s:['s','sun sit sip sad set sock'],z:['z','zip zoo zap zest zing zone'],
     a:['a','bag rag tag wag cap tap gap lap nap bat fat hat rat sad mad pad dad jam ham ram fan man pan van tan can'],
     e:['e','hen ten men den net pet wet jet get leg peg red fed led beg gem yet set'],
     i:['i','big dig fig wig bin fin tin win hit bit fit kit lip dip rip sip zip lid kid hid'],
@@ -67,6 +69,7 @@ const extra={
     dge:['dge','badge edge ridge lodge fudge bridge smudge grudge dodge judge budge ledge wedge hedge pledge fridge'],
   },
   3:{
+    gl:['gl','glad glass glow glue glum glide globe glitter'],pr:['pr','press print pram prim prize pray pride prop'],cr:['cr','crab crack crop crib cry cream crisp cross'],fr:['fr','frog from fresh free frame frost fry frill'],
     sl:['sl','slip sled slam slap slim slot slug slum slid slide sleep slope slow'],
     fl:['fl','flag flap flat flip flop fled flash flush flame flute float flow flight'],
     st:['st','step stop stem stick still stiff stamp stump stack stand stone stove stay steam street'],
@@ -104,7 +107,7 @@ for(const [book,entries] of Object.entries(bookWords)){
 for(const [book,patterns] of Object.entries(extra)){
   for(const [key,[pattern,words]] of Object.entries(patterns)){
     for(const word of words.split(' ')){
-      const entry={word,pattern,book:Number(book),group:Number(book)===1?('aeiou'.includes(key)?'vowels':['ts','ds','ng','n','m'].includes(key)?'endings':'digraphs'):Number(book)===2?(['ff','ss','ll','ck','tch','dge'].includes(key)?'finals':['oo-long','oo-short'].includes(key)?'oo':pattern.endsWith('_e')?'magic':'teams'):(key.startsWith('y-')?'y':key.length===3?'three':'two')};
+      const entry={word,pattern,book:Number(book),group:Number(book)===1?('aeiou'.includes(key)?'vowels':['p','b','t','d','k','g','f','v','s','z'].includes(key)?'pairs':['ts','ds','ng','n','m'].includes(key)?'endings':'digraphs'):Number(book)===2?(['ff','ss','ll','ck','tch','dge'].includes(key)?'finals':['oo-long','oo-short'].includes(key)?'oo':pattern.endsWith('_e')?'magic':'teams'):(key.startsWith('y-')?'y':key.length===3?'three':'two')};
       entry.sound=key.startsWith('oo-')||key.startsWith('th-')?key:entrySound(entry,Number(book));
       if(Number(book)===1||key.startsWith('y-'))entry.sound=key;
       entry.pattern=normalizedSpelling(entry.pattern);
@@ -120,12 +123,11 @@ export function availableTopics(book,kind,game){
   const field=kind==='spelling'?'pattern':'sound';
   const entries=arcadeBank.filter(e=>e.book===Number(book));
   if(kind==='spelling'){
-    return [...new Set(entries.map(e=>e.pattern+'::'+e.sound))].filter(key=>entries.filter(e=>e.pattern+'::'+e.sound===key).length>=3).map(key=>{const [pattern,sound]=key.split('::');return {key,label:spellingFocus(pattern,sound)};});
+    return [...new Set(entries.map(e=>e.pattern+'::'+e.sound))].filter(key=>entries.filter(e=>e.pattern+'::'+e.sound===key).length>=3).map(key=>{const [pattern,sound]=key.split('::');return {key,label:spellingFocus(pattern,sound),category:spellingCategory(book,pattern,sound)};});
   }
-  const contrasts=kind==='sound'&&Number(book)===1?[{key:'contrast-e-i',label:'Short e vs. short i'},{key:'contrast-ts-ds',label:'Endings /ts/ vs. /dz/ (ts and ds)'}]:[];
-  return [...contrasts,...[...new Set(entries.map(e=>e[field]))]
-    .filter(key=>new Set(entries.filter(e=>e[field]===key).map(e=>e.word)).size>=3)
-    .map(key=>({key,label:kind==='spelling'?spellingFocus(key,entries.find(e=>e.pattern===key)?.sound):labelSound(key)}))];
+  const contrasts=(soundContrasts[Number(book)]??[]).filter(c=>c[2].every(key=>entries.filter(e=>e.sound===key).length>=3)).map(c=>({key:'contrast-'+c[0],label:c[1],category:c[3]}));
+  const targets=[...new Set(entries.map(e=>e.sound))].filter(key=>new Set(entries.filter(e=>e.sound===key).map(e=>e.word)).size>=3).map(key=>({key,label:labelSound(key),category:targetCategory(book,key)}));
+  return [...contrasts,...targets];
 }
 export function practicePool(book,level){
   const entries=arcadeBank.filter(e=>e.book===Number(book));
@@ -141,22 +143,23 @@ export function spellingFocus(pattern,sound){
  const focus=(sound===pattern?names[pattern]:null)??labelSound(sound);
  return focus+' — spelled '+labelPattern(pattern);
 }
-export function buildArcadeQuestion({book,level,kind,topic,game},choose){
+export function buildArcadeQuestion({book,level,kind,topic,game,task='all'},choose){
  if(kind==='spelling'&&game==='mole')return ruleQuestion({book,level,kind,topic,game},choose);
- let contrast=null;
- if(topic==='contrast-e-i')contrast=['e','i'];
- if(topic==='contrast-ts-ds')contrast=['ts','ds'];
- if(contrast)topic=contrast[Math.random()<.5?0:1];
+ const spec=contrastFor(book,topic);
+ const contrast=spec?.[2]??null;
+ if(contrast)topic=contrast[Math.floor(Math.random()*contrast.length)];
   let targetSound=null;
   if(kind==='spelling'){const parts=topic.split('::');topic=parts[0];targetSound=parts[1]??null;}
   const ambiguous=new Set(['bow','sow','row','read','tune','new','knew','due','dew']);
-  const pool=practicePool(book,level).filter(e=>kind==='spelling'||!ambiguous.has(e.word));
+  const pool=practicePool(book,level).filter(e=>kind==='spelling'||!ambiguous.has(e.word)).filter(e=>Number(book)!==1||!spec||spec[3]!=='Compare beginning consonants'||e.group==='pairs').filter(e=>Number(book)!==1||!spec||spec[3]!=='Compare ending sounds'||e.group==='endings');
   const field=kind==='spelling'?'pattern':'sound';
   if(kind==='spelling'&&!targetSound)targetSound=pool.find(e=>e.pattern===topic)?.sound;
-  const targets=pool.filter(e=>e[field]===topic&&(kind!=='spelling'||e.sound===targetSound));
+  let targets=pool.filter(e=>e[field]===topic&&(kind!=='spelling'||e.sound===targetSound));
   const exemplar=targets[0];
+  if(Number(book)===1&&!contrast&&exemplar)targets=targets.filter(e=>e.group===exemplar.group);
   const sameDomain=entry=>{
     if(!exemplar)return false;
+    if(contrast)return contrast.includes(entry.sound);
     if(kind==='spelling'&&Number(book)===3)return true;
     if(Number(book)===1)return entry.group===exemplar.group;
     if(Number(book)===2)return (entry.group==='finals')===(exemplar.group==='finals');
@@ -169,9 +172,9 @@ export function buildArcadeQuestion({book,level,kind,topic,game},choose){
     if(sameSound.length)other=sameSound;
   }
   if(!targets.length||!other.length)throw new Error('Choose another topic for this round.');
-  const targetCount=game==='mole'?({simple:2,medium:3,difficult:4}[level]):({simple:3,medium:4,difficult:5}[level]);
+  const targetCount=game==='mole'?({simple:2,medium:3,difficult:3}[level]):({simple:3,medium:4,difficult:5}[level]);
   const matching=choose(targets,targetCount);
-  const distractors=choose(other,game==='mole'?1:targetCount);
+  const distractors=choose(other,game==='mole'?(task==='odd'?1:3):targetCount);
   const options=[...matching,...distractors].sort(()=>Math.random()-.5);
-  return {options,targetSound,focusLabel:kind==='spelling'?spellingFocus(topic,exemplar.sound):labelSound(topic),position:Number(book)===1?(exemplar.group==='vowels'?'middle':exemplar.group==='endings'?'end':exemplar.group==='digraphs'?'anywhere':'start'):Number(book)===2?(exemplar.group==='finals'?'end':'vowel'):(exemplar.group==='y'?'final y':'start'),correct:new Set((game==='mole'?distractors:matching).map(e=>e.word)),field,topic};
+  return {options,task,targetSound,focusLabel:kind==='spelling'?spellingFocus(topic,exemplar.sound):labelSound(topic),position:spec?(spec[3].includes('ending')?'end':spec[3].includes('vowel')?'middle':spec[3].includes('digraph')?'anywhere':spec[3].includes('sounds of y')?'final y':'start'):Number(book)===1?(exemplar.group==='vowels'?'middle':exemplar.group==='endings'?'end':exemplar.group==='digraphs'?'anywhere':'start'):Number(book)===2?(exemplar.group==='finals'?'end':'vowel'):(exemplar.group==='y'?'final y':'start'),correct:new Set((game==='mole'&&task==='odd'?distractors:matching).map(e=>e.word)),field,topic};
 }

@@ -103,3 +103,54 @@
 .mole .arcade-word:focus-visible{outline-offset:0}
 @media(max-width:700px){.mole .arcade-word{height:225px}.mole-window{height:195px;bottom:27px}.mole-window .mole-rise{width:100%;height:195px}.burrow-back,.burrow-front{height:70px}}
 @media(prefers-reduced-motion:reduce){.mole-window .mole-rise{transition:none!important}}
+.arcade-finish .celebrating{width:155px;height:155px}.arcade-finish h2{margin:8px 0;font-size:clamp(30px,4vw,43px)}
+.arcade-finish>p{margin:12px 0}
+.book-review{margin:20px auto;max-width:1100px;padding:12px 16px 20px;background:#19132bc9;border:1px solid #b69a65;border-radius:16px}
+.book-review #book-read-status{font-size:27px;color:#ffe5a1;margin:2px 0 8px}
+.review-bookcase{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:15px 0;align-items:end}
+.review-book-slot{position:relative;padding-bottom:12px;text-align:center;min-width:0}
+.review-book-slot:after{content:'';position:absolute;left:0;right:0;bottom:0;height:12px;background:linear-gradient(#cba779 0 20%,#80522f 22% 50%,#49311f);box-shadow:0 6px 10px #09070dbb;border-radius:2px}
+.review-book{position:relative;display:block;isolation:isolate;width:100%;max-width:215px;aspect-ratio:1;margin:0 auto;padding:0;background-image:url('./assets/review-magic-books.webp');background-size:300% 200%;background-position:var(--book-x) var(--book-y);background-color:transparent;border:0;border-radius:0;box-shadow:none;filter:brightness(.78);transition:filter .45s,transform .35s;cursor:pointer}
+.review-book strong{position:absolute;left:25%;width:54%;top:42%;translate:0 -50%;font:800 clamp(22px,calc(200px / var(--word-length)),39px)/1.1 var(--font);text-align:center;color:#342039;overflow-wrap:anywhere}
+.review-book:hover,.review-book:focus-visible{filter:brightness(1.08);outline:3px solid #ffe3a0;outline-offset:-5px}
+.review-book.is-lit{filter:brightness(1.2) drop-shadow(0 0 12px #ffe5a2);transform:translateY(-3px)}
+.book-read-star{position:absolute;right:10%;top:3%;color:#fff3a7;text-shadow:0 0 14px #ffd575;font-size:32px;opacity:0;scale:.4;transition:opacity .3s,scale .3s}
+.is-lit .book-read-star{opacity:1;scale:1;animation:book-sparkle 2.5s ease-in-out infinite}
+.book-model{font-size:16px!important;padding:5px 11px!important;margin:0 auto 4px;min-height:32px}
+.book-review .book-review-note{font-size:17px;margin:18px 0 0;color:#f1e8d3}
+.book-review.all-lit{border-color:#ffe397;box-shadow:0 0 27px #ffdf8944}
+.book-review.all-lit #book-read-status{color:#fff2aa;font-weight:800}
+@keyframes book-sparkle{50%{opacity:.6;scale:.8;rotate:15deg}}
+@media(max-width:520px){.review-bookcase{grid-template-columns:repeat(2,minmax(0,1fr))}.book-review{padding-inline:7px}.arcade-finish{padding:14px}.review-book strong{font-size:clamp(21px,calc(160px / var(--word-length)),32px)}}
+@media(prefers-reduced-motion:reduce){.review-book,.book-read-star{transition:none!important;animation:none!important}}
+/* A readable travel time makes the full rise/descent visible, rather than blinking. */
+.mole-window .mole-rise{transition:transform .9s cubic-bezier(.35,0,.25,1),visibility 0s!important}
+.mole .burrowed .mole-rise,.mole .collected .mole-rise{transition:transform .9s cubic-bezier(.35,0,.25,1),visibility 0s .9s!important}
+.mole .arcade-field{min-height:620px}
+.mole.arcade-field{min-height:620px}
+.mole .arcade-word{width:30%;left:calc(3% + var(--column)*32%);top:calc(2% + var(--row)*47%)}
+.mole .arcade-word:nth-of-type(even){top:calc(2% + var(--row)*47%)}
+@media(max-width:700px){.mole .arcade-word{width:46%;margin:12px 2%;position:relative;left:auto;top:auto!important}.mole.arcade-field{min-height:510px}}
+@media(prefers-reduced-motion:reduce){.mole-window .mole-rise,.mole .burrowed .mole-rise{transition:none!important}}
+.returned-bookshelf{display:grid;grid-template-columns:repeat(auto-fit,minmax(65px,1fr));gap:4px;min-height:110px;padding:8px 10px 15px;background:linear-gradient(transparent 88%,#c49960 89% 92%,#6b4227 93%);border-bottom:7px solid #402a1b;margin-bottom:18px;align-items:end}
+.shelf-book-slot{display:grid;place-items:end center;min-height:90px}
+.shelved-book{position:relative;display:block;width:85px;height:85px;background:url('./assets/review-magic-books.webp');background-size:300% 200%;background-position:var(--book-x) var(--book-y);filter:drop-shadow(0 0 8px #ffe4a777)}
+.shelved-book strong{position:absolute;left:25%;width:54%;top:37%;color:#342039;font-size:15px;line-height:1;text-align:center}
+.reading-control{padding:12px;background:#352941;border-radius:12px;text-align:left}.reading-control>strong{font-size:clamp(30px,4vw,46px);color:#fff0ba}.reading-control label{display:block;font-size:21px;margin-top:10px;position:relative}.reading-control meter{display:block;width:100%;height:28px;accent-color:#d9f48a}.reading-control label>span{position:absolute;left:60%;bottom:0;font-size:27px;color:#ffe6a5}.reading-control p{font-size:19px!important;margin:7px 0!important}
+.review-book{cursor:default}.review-book.is-current{filter:brightness(1.05) drop-shadow(0 0 13px #ffe3aa);outline:2px solid #ffe4aa;outline-offset:-5px}.review-book.is-flying{position:relative;z-index:30;transform:translate(var(--fly-x),var(--fly-y)) scale(.42);filter:brightness(1.4) drop-shadow(0 0 20px #fff1a7);transition:transform 1s cubic-bezier(.35,0,.2,1),filter 1s}.review-book.is-returned{visibility:hidden;pointer-events:none}.review-book-slot:has(.is-returned) .book-model{visibility:hidden}
+/* Finn traverses the completed deck, changes walking poses, then waves. */
+.bridge-deck.crossed{position:relative;overflow:visible;margin-top:100px}
+.finn-crossing{position:absolute;z-index:5;bottom:44px;left:0;width:130px;height:130px;animation:finn-crosses 5.5s .4s ease-in-out both}
+.finn-walk-sprite{display:block;width:130px;height:130px;background:url('./assets/finn-walking.webp') 0 0/300% 100% no-repeat;animation:finn-walk-poses .5s steps(1) 11,finn-waves .1s 5.9s forwards}
+@keyframes finn-crosses{from{left:0}to{left:calc(100% - 125px)}}
+@keyframes finn-walk-poses{0%,100%{background-position:0 0}50%{background-position:50% 0}}
+@keyframes finn-waves{to{background-position:100% 0}}
+@media(prefers-reduced-motion:reduce){.finn-crossing{animation:none;left:calc(100% - 125px)}.finn-walk-sprite{animation:none;background-position:100% 0}.review-book.is-flying{transition:none}}
+.potion-finale{position:relative;min-height:400px;max-width:650px;margin:20px auto 28px;isolation:isolate}
+.brewing-cauldron{position:absolute;width:260px;height:260px;object-fit:contain;bottom:30px;left:50%;translate:-50% 0;filter:drop-shadow(0 0 18px #88ebc37a);animation:brew-glow 1.4s ease-in-out infinite alternate}
+.potion-word-bubble{position:absolute;left:50%;top:45%;font-size:32px;font-weight:800;color:#f3ffdc;background:#285c53e8;border:2px solid #c2ffd3;border-radius:45%;padding:9px 18px;white-space:nowrap;box-shadow:0 0 17px #b3ffb766;animation:potion-word-emerges 1.8s var(--brew-delay) ease-out both;z-index:2}
+.brewing-caption{position:absolute;bottom:0;left:0;right:0;text-align:center;font-size:21px;color:#daffbf}
+@keyframes brew-glow{to{filter:drop-shadow(0 0 30px #92ffc0c9);transform:rotate(1deg)}}
+@keyframes potion-word-emerges{0%{opacity:0;transform:translate(-50%,100px) scale(.15)}35%{opacity:1}100%{opacity:1;transform:translate(calc(-50% + var(--drift-x)),var(--drift-y)) scale(1)}}
+@media(max-width:520px){.potion-word-bubble{font-size:24px;padding:8px;--drift-x:0px!important}.potion-word-bubble:nth-of-type(3n+1){left:18%}.potion-word-bubble:nth-of-type(3n+3){left:82%}}
+@media(prefers-reduced-motion:reduce){.brewing-cauldron{animation:none}.potion-word-bubble{animation:none;transform:translate(calc(-50% + var(--drift-x)),var(--drift-y))}}
