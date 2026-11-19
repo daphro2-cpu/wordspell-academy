@@ -15,7 +15,7 @@ const flightMusic=by('flight-music');
 const flightEffect=new Audio();
 flightEffect.volume=.42;
 const flightTime={simple:22,medium:19,difficult:16};
-const sortTime={simple:12,medium:10,difficult:8};
+const sortTime={simple:30,medium:35,difficult:40};
 const flightWarningAt=5000;
 let sortClock;
 let flightClock;
@@ -217,6 +217,7 @@ function selectionUi(){
 selectionUi();
 
 function start(settings) {
+  if(settings.mode==='sort')settings={...settings,sortTimed:settings.sortTimed??true};
   stopSortClock();
   stopFlightRun();
   stopListening();
@@ -311,7 +312,7 @@ function sortView(mission) {
       <div class="sort-listen"><span aria-hidden="true">☁</span><button class="quiet audio" type="button" data-action="hearSort">◖)) ${sortPhase==='ready'?'Hear the word':'Hear it again'}</button></div>
       <details class="teacher-word"><summary>Teacher word</summary><p>${esc(next.entry.word)}</p></details>
       <div class="sort-challenge"><button type="button" class="quiet" data-action="toggleSortChallenge" aria-pressed="${Boolean(active.settings.sortTimed)}">Timer ${active.settings.sortTimed?'on':'off'}</button>
-      ${active.settings.sortTimed?`<span id="sort-clock" role="timer">${sortClockText()}</span><span>★ ${active.sortStars}</span>`:''}</div>`:''}
+      <div class="sort-timer ${active.settings.sortTimed?'':'timer-disabled'}"><span id="sort-clock" role="timer">${sortClockText()}</span><progress id="sort-round-progress" aria-label="Time left for this round" max="${sortTime[active.settings.level]*1000}" value="${active.sortRemaining}"></progress><small>${active.settings.sortTimed?'One clock for all '+questions.length+' words · pauses while you listen':'Countdown paused'}</small></div><span>★ ${active.sortStars}</span></div>`:''}
     ${next?`<p class="sort-cue" role="status" data-phase="${sortPhase}">${sortCueText[sortPhase]}</p>`:''}
     <div class="word-portals" role="group" aria-label="Sound boxes">${board.categories.map((key,index)=>{
       const words=placed.filter(card=>card.correct===key);
@@ -336,7 +337,8 @@ function updateSortCue(){
   play.querySelectorAll('[data-portal]').forEach(box=>{box.disabled=phase!=='pick';});
 }
 function sortClockText(){
-  return active.sortRemaining>0?Math.ceil(active.sortRemaining/1000)+' s for a bonus star':'Time’s up. Keep sorting!';
+  if(!active.settings.sortTimed)return 'Timer off';
+  return active.sortRemaining>0?Math.ceil(active.sortRemaining/1000)+' seconds left':'Time’s up. Keep sorting!';
 }
 function stopSortClock(){
   clearInterval(sortClock);
@@ -349,10 +351,11 @@ function startSortClock(){
   sortClock=setInterval(()=>{
     const now=performance.now();
     if(active!==round||round.sortPhase!=='pick'){stopSortClock();return;}
-    if(!guide.open&&!play.querySelector('.scene-sort .teacher-word[open]')){
+    if(!document.hidden&&!guide.open&&!play.querySelector('.scene-sort .teacher-word[open]')){
       round.sortRemaining=Math.max(0,round.sortRemaining-(now-last));
       const clock=by('sort-clock');
       if(clock&&clock.textContent!==sortClockText())clock.textContent=sortClockText();
+      const progress=by('sort-round-progress');if(progress)progress.value=round.sortRemaining;
       if(!round.sortRemaining)stopSortClock();
     }
     last=now;
@@ -378,7 +381,6 @@ function sortWord(portal) {
   if(bonus)active.sortStars++;
   active.score++;
   active.sortPhase='ready';
-  active.sortRemaining=sortTime[active.settings.level]*1000;
   active.boardMessage=bonus?'That word is home! ★ Bonus star!':'That word is home!';
   const following=active.questions[active.score];
   render();
@@ -1112,7 +1114,6 @@ const actions={
   hearSort,
   toggleSortChallenge:()=>{
     active.settings.sortTimed=!active.settings.sortTimed;
-    if(active.settings.sortTimed)active.sortRemaining=sortTime[active.settings.level]*1000;
     render();
     startSortClock();
     focusOption('[data-action=toggleSortChallenge]');

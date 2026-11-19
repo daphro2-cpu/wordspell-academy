@@ -49,3 +49,10 @@
 }
 .flashlight .discovered{z-index:6}
 .flashlight .arcade-word:not(.discovered){opacity:.3}
+
+.scene-sort .sort-challenge{flex-wrap:wrap}
+.sort-timer{flex:1;min-width:190px;padding:10px 15px;border:1px solid #d9b875;border-radius:10px;background:#21182d;color:#fff0be}
+.sort-timer #sort-clock{font-size:clamp(24px,2.5vw,36px);display:block;font-weight:800;line-height:1.1}
+.sort-timer progress{display:block;width:100%;height:13px;margin:7px 0;accent-color:#ffd77e}
+.sort-timer small{font-size:14px;display:block;line-height:1.2}
+.sort-timer.timer-disabled{opacity:.65}
