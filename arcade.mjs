@@ -1,7 +1,7 @@
 import {fitBookLabels,watchBookLabels} from './book-labels.mjs?v=green19';
 import {bindFlashlightInput} from './flashlight-input.mjs?v=touch7';
 import {cueFor} from './sound-cues.mjs?v=pace6';
-import {createBookReader} from './book-reading.mjs?v=ground17';
+import {createBookReader} from './book-reading.mjs?v=steady30';
 import {playVoiceSuccess} from './effects.mjs?v=arcade1';
 import {MoleCycle} from './burrow-state.mjs?v=tap25';
 import {availableTopics,buildArcadeQuestion,labelSound,labelPattern,practicePool,flashlightGoal} from './arcade-bank.mjs?v=cvc21';
@@ -52,17 +52,19 @@ function stop(){
 }
 export function mountArcade({getSettings,enter,exit,speak,stopSpeech}){
   const lobby=document.getElementById('lobby'),host=document.getElementById('play');
-  bookReader=createBookReader({canRead:()=>current?.phase==='done'&&!current.manualReading&&!current.bookFlying&&!current.bookModelPlaying&&performance.now()>=(current.bookQuietUntil??0),onLevel:updateBookMeter,onRead:()=>sendBookHome('voice'),onStatus:message=>{const status=host.querySelector('#book-mic-status');if(status)status.textContent=message;const toggle=host.querySelector('[data-arcade-action="bookMic"]');if(toggle)toggle.textContent=bookReader?.listening?'Pause microphone':'Start microphone';}});
+  bookReader=createBookReader({canRead:()=>current?.phase==='done'&&!current.manualReading&&!current.bookFlying&&!current.bookModelPlaying&&performance.now()>=(current.bookQuietUntil??0)&&current.collected.some(word=>!current.readWords.has(word)),onLevel:updateBookMeter,onRead:()=>sendBookHome('voice'),onStatus:message=>{const status=host.querySelector('#book-mic-status');if(status)status.textContent=message;const toggle=host.querySelector('[data-arcade-action="bookMic"]');if(toggle)toggle.textContent=bookReader?.listening?'Pause microphone':'Start microphone';}});
   function updateBookMeter(level){
     const meter=host.querySelector('#book-voice-level');
     if(!meter)return;
-    const latched=performance.now()<(current?.bookSuccessUntil??0);
-    const reached=level>=60||latched;
-    meter.value=latched?Math.max(60,level):level;
+    const latched=Boolean(current?.bookVoicePassed);
+    const allReturned=Boolean(current?.collected.length&&current.collected.every(word=>current.readWords.has(word)));
+    const reached=latched||allReturned;
+    const value=Math.round(reached?100:Math.max(0,Math.min(100,Number.isFinite(level)?level:0)));
+    if(meter.getAttribute('aria-valuenow')!==String(value)){meter.setAttribute('aria-valuenow',String(value));meter.style.setProperty('--voice-level',value/100);}
     meter.classList.toggle('loud-enough',reached);
     const control=host.querySelector('.reading-control');
     control?.classList.toggle('voice-passed',reached);
-    if(!latched&&control?.dataset.bookPassed==='true'){
+    if(!reached&&control?.dataset.bookPassed==='true'){
       delete control.dataset.bookPassed;
       const status=host.querySelector('#book-mic-status');
       if(status&&bookReader.listening&&!current.manualReading)status.textContent='Read the highlighted word aloud.';
@@ -95,7 +97,7 @@ export function mountArcade({getSettings,enter,exit,speak,stopSpeech}){
   function reviewBookcase(){
     const words=[...new Set(current.collected)];
     const allLit=words.length>0&&words.every(w=>current.readWords.has(w));
-    return '<section class="book-review '+(allLit?'all-lit':'')+'" aria-label="Read and light your books"><p id="book-read-status" role="status">'+(allLit?'Every book is glowing! Wonderful reading!':current.readWords.size+' of '+words.length+' books returned')+'</p><div class="returned-bookshelf" aria-label="Books returned to the shelf">'+words.map((w,i)=>'<span class="shelf-book-slot" data-shelf-slot="'+i+'"></span>').join('')+'</div><div class="reading-control"><strong id="current-read-word">'+(allLit?'All books are home!':'Read aloud: '+esc(words.find(w=>!current.readWords.has(w))??''))+'</strong><label data-book-voice-meter><span class="sr-only">Your voice</span><meter id="book-voice-level" min="0" max="100" value="0" low="60" high="60" optimum="80"></meter><span aria-hidden="true">★</span></label><p id="book-mic-status" role="status">Getting the microphone ready…</p><button type="button" class="quiet" data-arcade-action="bookMic">Start microphone</button><button type="button" class="quiet" data-arcade-action="bookTeacher">Teacher check — no microphone</button><button type="button" class="primary" data-arcade-action="bookConfirm" hidden>Read correctly — send book home</button></div><div class="review-bookcase">'+words.map((word,index)=>'<div class="review-book-slot"><div class="review-book '+(current.readWords.has(word)?'is-returned':index===words.findIndex(w=>!current.readWords.has(w))?'is-current':'')+'" data-review-book="'+index+'" role="img" aria-label="Book: '+esc(word)+'" style="--book-x:'+(index%3)*50+'%;--book-y:'+Math.floor(index%6/3)*100+'%;--word-length:'+word.length+'"><strong>'+esc(word)+'</strong><span class="book-read-star" aria-hidden="true">✦</span></div>'+(clipWords.has(word)?'<button class="quiet book-model" type="button" data-review-model="'+index+'" aria-label="Hear '+esc(word)+'">◖)) Hear it</button>':'')+'</div>').join('')+'</div><p class="book-review-note">Read each highlighted word aloud to send its book home.</p></section>';
+    return '<section class="book-review '+(allLit?'all-lit':'')+'" aria-label="Read and light your books"><p id="book-read-status" role="status">'+(allLit?'Every book is glowing! Wonderful reading!':current.readWords.size+' of '+words.length+' books returned')+'</p><div class="returned-bookshelf" aria-label="Books returned to the shelf">'+words.map((w,i)=>'<span class="shelf-book-slot" data-shelf-slot="'+i+'"></span>').join('')+'</div><div class="reading-control"><strong id="current-read-word">'+(allLit?'All books are home!':'Read aloud: '+esc(words.find(w=>!current.readWords.has(w))??''))+'</strong><label data-book-voice-meter><span class="sr-only">Your voice</span><div id="book-voice-level" role="meter" aria-label="Your voice" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" style="--voice-level:0"><i aria-hidden="true"></i></div><span aria-hidden="true">★</span></label><p id="book-mic-status" role="status">Getting the microphone ready…</p><button type="button" class="quiet" data-arcade-action="bookMic">Start microphone</button><button type="button" class="quiet" data-arcade-action="bookTeacher">Teacher check — no microphone</button><button type="button" class="primary" data-arcade-action="bookConfirm" hidden>Read correctly — send book home</button></div><div class="review-bookcase">'+words.map((word,index)=>'<div class="review-book-slot"><div class="review-book '+(current.readWords.has(word)?'is-returned':index===words.findIndex(w=>!current.readWords.has(w))?'is-current':'')+'" data-review-book="'+index+'" role="img" aria-label="Book: '+esc(word)+'" style="--book-x:'+(index%3)*50+'%;--book-y:'+Math.floor(index%6/3)*100+'%;--word-length:'+word.length+'"><strong>'+esc(word)+'</strong><span class="book-read-star" aria-hidden="true">✦</span></div>'+(clipWords.has(word)?'<button class="quiet book-model" type="button" data-review-model="'+index+'" aria-label="Hear '+esc(word)+'">◖)) Hear it</button>':'')+'</div>').join('')+'</div><p class="book-review-note">Read each highlighted word aloud to send its book home.</p></section>';
   }
   function render(){
     if(!current)return;
@@ -240,8 +242,8 @@ export function mountArcade({getSettings,enter,exit,speak,stopSpeech}){
     if(source==='voice'){if(!bookReader.listening||current.manualReading||current.bookModelPlaying||performance.now()<(current.bookQuietUntil??0))return;}
     else if(source!=='teacher'||!current.manualReading)return;
     const state=current,words=[...new Set(state.collected)],index=words.findIndex(w=>!state.readWords.has(w));if(index<0)return;
-    if(source==='voice'){
-      state.bookSuccessUntil=performance.now()+1700;
+    {
+      state.bookVoicePassed=true;
       const control=host.querySelector('.reading-control');
       if(control)control.dataset.bookPassed='true';
       const status=host.querySelector('#book-mic-status');
@@ -250,7 +252,9 @@ export function mountArcade({getSettings,enter,exit,speak,stopSpeech}){
     }
     state.bookFlying=true;const word=words[index],book=host.querySelector('[data-review-book="'+index+'"]'),slot=host.querySelector('[data-shelf-slot="'+index+'"]');
     const from=book.getBoundingClientRect(),to=slot.getBoundingClientRect();book.style.setProperty('--fly-x',(to.x+to.width/2-from.x-from.width/2)+'px');book.style.setProperty('--fly-y',(to.y+to.height/2-from.y-from.height/2)+'px');book.classList.add('is-lit','is-flying');fx(true);
-    setTimeout(()=>{if(current!==state)return;state.readWords.add(word);book.classList.remove('is-flying','is-current');book.classList.add('is-returned');slot.innerHTML='<span class="shelved-book" style="--book-x:'+(index%3)*50+'%;--book-y:'+Math.floor(index%6/3)*100+'%"><strong>'+esc(word)+'</strong></span>';fitBookLabels(host);state.bookFlying=false;state.bookQuietUntil=performance.now()+700;bookReader.reset();
+    setTimeout(()=>{if(current!==state)return;state.readWords.add(word);book.classList.remove('is-flying','is-current');book.classList.add('is-returned');slot.innerHTML='<span class="shelved-book" style="--book-x:'+(index%3)*50+'%;--book-y:'+Math.floor(index%6/3)*100+'%"><strong>'+esc(word)+'</strong></span>';fitBookLabels(host);state.bookFlying=false;state.bookVoicePassed=false;state.bookQuietUntil=performance.now()+300;bookReader.reset();updateBookMeter(0);
+      const control=host.querySelector('.reading-control');if(control)delete control.dataset.bookPassed;
+      const status=host.querySelector('#book-mic-status');if(status)status.textContent=state.manualReading?'Listen to the highlighted word, then send its book home.':'Read the highlighted word aloud.';
       const next=words.findIndex(w=>!state.readWords.has(w)),done=next<0;host.querySelector('#book-read-status').textContent=done?'Every book is home! Wonderful reading!':state.readWords.size+' of '+words.length+' books returned';host.querySelector('#current-read-word').textContent=done?'All books are home!':'Read aloud: '+words[next];
       if(done){bookReader.stop();host.querySelector('[data-arcade-action="bookConfirm"]').disabled=true;host.querySelector('[data-arcade-action="bookMic"]').disabled=true;host.querySelector('[data-arcade-action="bookTeacher"]').disabled=true;playVoiceSuccess();host.querySelector('.book-review').classList.add('all-lit');host.querySelector('#book-mic-status').textContent='You sent every book home!';}else host.querySelector('[data-review-book="'+next+'"]').classList.add('is-current');
     },1000);

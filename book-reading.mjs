@@ -1,12 +1,12 @@
 import {VoiceHold,VOICE_GOAL,voiceLevel} from './voice-hold.mjs?v=reading15';
-// A voice reaching the star returns one book immediately, then waits for quiet.
+// Each eligible book passes once when the voice reaches the star.
+// Animation/cooldown eligibility controls the next turn, not a silence requirement.
 export class VoiceTurn extends VoiceHold{
- constructor(){super({rearmAfterPass:true});}
+ constructor(){super();this.passed=false;}
+ reset(){super.reset(false);this.passed=false;}
  feed(level,ms){
-  if(!Number.isFinite(level)||!Number.isFinite(ms)||ms<=0)return false;
-  if(this.waitForQuiet)return super.feed(level,ms);
-  if(level<VOICE_GOAL)return false;
-  this.reset(true);return true;
+  if(this.passed||!Number.isFinite(level)||!Number.isFinite(ms)||ms<=0||level<VOICE_GOAL)return false;
+  this.passed=true;return true;
  }
 }
 export function createBookReader({onLevel,onRead,onStatus,onProgress=()=>{},canRead=()=>true}){
@@ -22,7 +22,8 @@ export function createBookReader({onLevel,onRead,onStatus,onProgress=()=>{},canR
    const track=stream.getAudioTracks()[0];
    if(!track||track.readyState==='ended')throw new Error('No active microphone');
    track.onended=()=>{if(request===token){stop();onStatus('Microphone disconnected. No books will move. Reconnect it or choose Teacher check — no microphone.');}};
-   const AC=window.AudioContext??window.webkitAudioContext;context=new AC();await context.resume();
+   const AC=window.AudioContext??window.webkitAudioContext;const sessionContext=new AC();context=sessionContext;await sessionContext.resume();
+   if(request!==token){sessionContext.close().catch(()=>{});return;}
    analyser=context.createAnalyser();analyser.fftSize=1024;context.createMediaStreamSource(stream).connect(analyser);
    const samples=new Float32Array(analyser.fftSize);enabled=true;turn.reset();last=performance.now();onStatus('Read the highlighted word aloud.');
    function tick(now){
@@ -38,7 +39,7 @@ export function createBookReader({onLevel,onRead,onStatus,onProgress=()=>{},canR
     frame=requestAnimationFrame(tick);
    }
    frame=requestAnimationFrame(tick);
-  }catch(error){stop();onStatus(error.name==='NotAllowedError'?'Microphone access was not allowed. Choose Teacher check — no microphone, or allow access and start the microphone.':'No microphone available. Choose Teacher check — no microphone to continue.');}
+  }catch(error){if(request!==token)return;stop();onStatus(error.name==='NotAllowedError'?'Microphone access was not allowed. Choose Teacher check — no microphone, or allow access and start the microphone.':'No microphone available. Choose Teacher check — no microphone to continue.');}
  }
  return {start,stop,reset:()=>turn.reset(true),get listening(){return enabled;}};
 }
