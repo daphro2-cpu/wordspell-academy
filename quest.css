@@ -464,3 +464,5 @@ body::before{opacity:.22}
 .sort-spelling-word{display:inline-block;font-size:clamp(36px,5vw,64px);margin:0 20px;color:#fff0bd}
 
 .made-up-label{display:block;font-size:1.1rem;color:#ffe2a0;margin-block:6px}
+
+.word-portal.pattern-selected{border:4px solid #75eb95;background:#1c513b;box-shadow:0 0 22px #65ff9a66;opacity:1}.word-portal.pattern-selected .portal-label{background:#c7f5d4;color:#174c34}

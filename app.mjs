@@ -325,16 +325,17 @@ function sortView(mission) {
   const placed=questions.slice(0,score);
   return `<article class="stage mission scene-sort"><header class="mission-header"><div><h1 tabindex="-1">The Sorting Hall</h1><p class="mission-objective">Listen and bring the words home.</p></div><span class="mission-count">${score} of ${questions.length} words sorted</span></header>
     <div class="scene-grid"><div class="task">
-    <h2>${next?(spellingSort?'Listen. Choose a possible spelling.':'Hear the word. Tap its box.'):'Yay! All the words are home.'}</h2>
-    ${next?`<p class="prompt">${spellingSort?'More than one box may work. Think about where the spelling can go.':esc(board.prompt)+' The word will appear when you tap the right box.'}</p>
+    <h2>${next?(spellingSort?'Listen. Tap every possible spelling.':'Hear the word. Tap its box.'):'Yay! All the words are home.'}</h2>
+    ${next?`<p class="prompt">${spellingSort?'Tap all the spellings that can make what you hear. Some words need more than one box.':esc(board.prompt)+' The word will appear when you tap the right box.'}</p>
       <div class="sort-listen"><span aria-hidden="true">☁</span><button class="quiet audio" type="button" data-action="hearSort">◖)) ${sortPhase==='ready'?'Hear the word':'Hear it again'}</button></div>
-      <details class="teacher-word"><summary>Teacher word</summary><p>${esc(next.entry.word)}</p></details>
+      ${spellingSort?'':'<details class="teacher-word"><summary>Teacher word</summary><p>'+esc(next.entry.word)+'</p></details>'}
       <div class="sort-challenge"><button type="button" class="quiet" data-action="toggleSortChallenge" aria-pressed="${Boolean(active.settings.sortTimed)}">Timer ${active.settings.sortTimed?'on':'off'}</button>
       <div class="sort-timer ${active.settings.sortTimed?'':'timer-disabled'}"><span id="sort-clock" role="timer">${sortClockText()}</span><progress id="sort-round-progress" aria-label="Time left for this word" max="${sortTime[active.settings.level]*1000}" value="${active.sortRemaining}"></progress><small>${active.settings.sortTimed?'3 seconds per word · starts after the audio':'Countdown paused'}</small><span id="sort-warning" role="status"></span></div><span>★ ${active.sortStars}</span></div>`:''}
-    ${next?`<p class="sort-cue" role="status" data-phase="${sortPhase}">${sortCueText[sortPhase]}</p>`:''}
+    ${next?`<p class="sort-cue" role="status" data-phase="${sortPhase}">${spellingSort&&sortPhase==='pick'?'Tap every possible box!':sortCueText[sortPhase]}</p>`:''}
     <div class="word-portals" role="group" aria-label="Sound boxes">${board.categories.map((key,index)=>{
-      const words=placed.filter(card=>card.correct===key);
-      return `<button class="word-portal" type="button" data-portal="${index}" ${next&&canPick?'':'disabled'}><span class="portal-label">${shown(key)}</span><span class="portal-words">${words.map(card=>'<span class="'+(card===placed.at(-1)?'just-sorted':'')+'">'+esc(card.sortedWord??card.entry.word)+'</span>').join('')}</span></button>`;
+      const words=placed.filter(card=>card.possibleSpellings?Object.hasOwn(card.possibleSpellings,key):card.correct===key);
+      const selected=Boolean(next?.selectedPatterns?.has(key));
+      return `<button class="word-portal ${selected?'pattern-selected':''}" type="button" data-portal="${index}" aria-pressed="${selected}" ${next&&canPick&&!selected?'':'disabled'}><span class="portal-label">${shown(key)}${selected?' <span aria-label="Selected">✓</span>':''}</span><span class="portal-words">${words.map(card=>'<span class="'+(card===placed.at(-1)?'just-sorted':'')+'">'+esc(card.possibleSpellings?.[key]??card.entry.word)+'</span>').join('')}</span></button>`;
     }).join('')}</div>
     <p class="story-status" role="status">${esc(active.boardMessage)}</p>
     ${next?'':'<button class="primary" type="button" data-action="finishSort">Let’s read! →</button>'}
@@ -350,9 +351,9 @@ function updateSortCue(){
   if(!cue)return;
   const phase=active.sortPhase;
   cue.dataset.phase=phase;
-  cue.textContent=sortCueText[phase];
+  cue.textContent=active.board.possibleSpellingSort&&phase==='pick'?'Tap every possible box!':sortCueText[phase];
   play.querySelector('[data-action=hearSort]').textContent=phase==='ready'?'◖)) Hear the word':'◖)) Hear it again';
-  play.querySelectorAll('[data-portal]').forEach(box=>{box.disabled=phase!=='pick';});
+  play.querySelectorAll('[data-portal]').forEach(box=>{box.disabled=phase!=='pick'||Boolean(active.questions[active.score]?.selectedPatterns?.has(active.board.categories[Number(box.dataset.portal)]));});
   const clock=by('sort-clock');if(clock)clock.textContent=sortClockText();
   const progress=by('sort-round-progress');if(progress)progress.value=active.sortRemaining;
   updateSortUrgency();
@@ -409,7 +410,15 @@ function sortWord(portal) {
     play.querySelector('.story-status').textContent=active.boardMessage;
     return;
   }
-  if(next.possibleSpellings){next.correct=selectedKey;next.sortedWord=possibleWord;}
+  if(next.possibleSpellings){
+    next.selectedPatterns??=new Set();
+    if(next.selectedPatterns.has(selectedKey))return;
+    next.selectedPatterns.add(selectedKey);
+    if(next.selectedPatterns.size<Object.keys(next.possibleSpellings).length){
+      active.boardMessage='Good! Find the other possible spelling'+(Object.keys(next.possibleSpellings).length-next.selectedPatterns.size>1?'s':'')+'.';
+      render();return;
+    }
+  }
   stopSortClock();
   const bonus=active.settings.sortTimed&&active.sortRemaining>0;
   if(bonus)active.sortStars++;
