@@ -1,3 +1,4 @@
+import {consonantEntries} from './consonant-words.mjs?v=cvc21';
 import {soundContrasts,contrastFor,targetCategory,spellingCategory} from './arcade-focus.mjs?v=focus2';
 import {ruleTopics,ruleQuestion} from './arcade-rules.mjs?v=jrules10';
 import {bookWords} from './bank.mjs?v=experience12';
@@ -115,6 +116,10 @@ for(const [book,patterns] of Object.entries(extra)){
     }
   }
 }
+for(const entry of consonantEntries){
+ const sound=entry.pattern==='c'?'k':entry.pattern;
+ if(!all.some(e=>e.book===1&&e.word===entry.word&&e.sound===sound))all.push({...entry,book:1,sound});
+}
 export const arcadeBank=all;
 export const labelSound=key=>soundNames[key]??(key==='all'?'ending in ball':key==='short-o'?'vowel in doll':key);
 export const labelPattern=key=>key.replace('_',' · ');
@@ -152,7 +157,7 @@ export function buildArcadeQuestion({book,level,kind,topic,game,task='all',pinne
   let targetSound=null;
   if(kind==='spelling'){const parts=topic.split('::');topic=parts[0];targetSound=parts[1]??null;}
   const ambiguous=new Set(['bow','sow','row','read','tune','new','knew','due','dew']);
-  const pool=practicePool(book,level,game==='flashlight').filter(e=>Number(book)!==1||!contrast||!['n','ng','m','ts','ds'].includes(topic)||e.group==='endings').filter(e=>kind==='spelling'||!ambiguous.has(e.word)).filter(e=>Number(book)!==1||!spec||spec[3]!=='Compare beginning consonants'||e.group==='pairs').filter(e=>Number(book)!==1||!spec||spec[3]!=='Compare ending sounds'||e.group==='endings');
+  const pool=practicePool(book,level,game==='flashlight').filter(e=>Number(book)!==1||e.group!=='pairs'||/^[bcdfghjklmnpqrstvwxyz][aeiou][bcdfghjklmnpqrstvz]$/.test(e.word)).filter(e=>Number(book)!==1||!contrast||!['n','ng','m','ts','ds'].includes(topic)||e.group==='endings').filter(e=>kind==='spelling'||!ambiguous.has(e.word)).filter(e=>Number(book)!==1||!spec||spec[3]!=='Compare beginning consonants'||e.group==='pairs').filter(e=>Number(book)!==1||!spec||spec[3]!=='Compare ending sounds'||e.group==='endings');
   const field=kind==='spelling'?'pattern':'sound';
   if(kind==='spelling'&&!targetSound)targetSound=pool.find(e=>e.pattern===topic)?.sound;
   const excluded=new Set(excludedWords);

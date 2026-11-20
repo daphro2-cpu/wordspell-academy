@@ -1,5 +1,5 @@
 import {bookWords} from './bank.mjs?v=experience12';
-import {choiceLabel, matchFocus, shuffle} from './engine.mjs?v=experience12';
+import {choiceLabel, matchFocus, shuffle, practiceEntries} from './engine.mjs?v=cvc21';
 
 const mixedStory=[
   {sentence:'A {cat} sat on a {mat}.', art:'cat-mat', imageAlt:'An orange cat sits on a mat.', anchor:'map', middle:true, clue:'Find 2 short a words.', targets:['cat','mat'], decoys:['bed','pin','cup'], extra:'pot', tricky:'sat'},
@@ -48,7 +48,7 @@ export function makeStory({book,group,level}) {
         .slice(0,pageCount-1).map(entry=>entry.word),...(level==='difficult'?[tricky]:[])],
     }));
   }
-  const pool=bookWords[book].filter(e=>matchFocus(book,group,e));
+  const pool=practiceEntries(book,group);
   const patterns=[...new Set(pool.map(e=>e.pattern))];
   const pageFrames=[
     'Gigi found {A} written on a scroll.',

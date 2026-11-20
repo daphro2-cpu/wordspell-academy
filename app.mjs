@@ -1,11 +1,13 @@
+import {wordAudioCues} from './word-audio-cues.mjs?v=cvc21';
+import {consonantEntries,endingEntries,digraphEntries} from './consonant-words.mjs?v=cvc21';
 import {VoiceHold,VOICE_GOAL,VOICE_HOLD_MS,voiceLevel} from './voice-hold.mjs?v=reading15';
-import {mountArcade,registerArcadeClips} from './arcade.mjs?v=hits20';
+import {mountArcade,registerArcadeClips} from './arcade.mjs?v=cvc21';
 import {playSpinSound,playReelStop,stopSpinSound,playVoiceSuccess} from './effects.mjs?v=arcade1';
 import {catalog} from './bank.mjs?v=experience12';
-import {modes,levels,createRound,sortingBoard,practiceContrasts,shuffle,choiceLabel,isVowelTile} from './engine.mjs?v=experience12';
+import {modes,levels,createRound,sortingBoard,practiceContrasts,shuffle,choiceLabel,isVowelTile} from './engine.mjs?v=cvc21';
 
 import {missions,flightMission} from './missions.mjs?v=listen-sort';
-import {makeStory} from './story.mjs?v=experience12';
+import {makeStory} from './story.mjs?v=cvc21';
 import {reviewPicture} from './review.mjs?v=word-clues';
 
 const by=id=>document.getElementById(id);
@@ -15,7 +17,7 @@ const flightMusic=by('flight-music');
 const flightEffect=new Audio();
 flightEffect.volume=.42;
 const flightTime={simple:22,medium:19,difficult:16};
-const sortTime={simple:18,medium:20,difficult:20};
+const sortTime={simple:15,medium:15,difficult:15};
 const flightWarningAt=5000;
 let sortClock;
 let flightClock;
@@ -110,6 +112,7 @@ function stopSound(){
   soundRequest++;
   promptPlaying=false;
   audio.pause();
+  audio.onplaying=null;audio.onloadedmetadata=null;
   speech?.cancel();
   if(active?.sortPhase==='listening'){
     active.sortPhase='ready';
@@ -120,6 +123,16 @@ function playBundled(word,request,rate=1){
   if (request!==soundRequest)return;
   audio.src=new URL('./audio/ana/'+encodeURIComponent(word.toLowerCase())+'.mp3',import.meta.url).href;
   audio.playbackRate=rate;
+  audio.onplaying=null;audio.onloadedmetadata=null;
+  const cue=active?.settings.mode==='sort'&&active.sortPhase==='listening'?wordAudioCues[word.toLowerCase()]:null;
+  if(cue){
+    audio.onloadedmetadata=()=>{if(request===soundRequest)audio.currentTime=cue[0];};
+    audio.onplaying=()=>{
+      if(request!==soundRequest)return;
+      clearTimeout(promptWatchdog);
+      promptWatchdog=setTimeout(()=>{if(request===soundRequest){audio.pause();finishAudioPrompt(request);}},Math.max(0,cue[1]-audio.currentTime)/rate*1000);
+    };
+  }
   audio.onended=()=>finishAudioPrompt(request);
   const unavailable=()=>{
     if(request===soundRequest)by('live').textContent='Audio is unavailable. Open Teacher word to read the prompt.';
@@ -157,6 +170,7 @@ function say(word,preview=false,sortPrompt=false){
   speech.speak(clip);
 }
 function shown(key) {
+  if(key==='c')return '<strong>c / k</strong>';
   if(key==='oll-short')return '<strong class="door-sound-title">short o /ɑ/</strong><small>as in doll</small>';
   if(key==='oll-long')return '<strong class="door-sound-title">long o /oʊ/</strong><small>as in roll</small>';
   if(key==='th-voiced')return '<u>th</u>';
@@ -313,7 +327,7 @@ function sortView(mission) {
       <div class="sort-listen"><span aria-hidden="true">☁</span><button class="quiet audio" type="button" data-action="hearSort">◖)) ${sortPhase==='ready'?'Hear the word':'Hear it again'}</button></div>
       <details class="teacher-word"><summary>Teacher word</summary><p>${esc(next.entry.word)}</p></details>
       <div class="sort-challenge"><button type="button" class="quiet" data-action="toggleSortChallenge" aria-pressed="${Boolean(active.settings.sortTimed)}">Timer ${active.settings.sortTimed?'on':'off'}</button>
-      <div class="sort-timer ${active.settings.sortTimed?'':'timer-disabled'}"><span id="sort-clock" role="timer">${sortClockText()}</span><progress id="sort-round-progress" aria-label="Time left for this round" max="${sortTime[active.settings.level]*1000}" value="${active.sortRemaining}"></progress><small>${active.settings.sortTimed?'One clock for all '+questions.length+' words · pauses while you listen':'Countdown paused'}</small></div><span>★ ${active.sortStars}</span></div>`:''}
+      <div class="sort-timer ${active.settings.sortTimed?'':'timer-disabled'}"><span id="sort-clock" role="timer">${sortClockText()}</span><progress id="sort-round-progress" aria-label="Time left for this round" max="${sortTime[active.settings.level]*1000}" value="${active.sortRemaining}"></progress><small>${active.settings.sortTimed?'One clock for all '+questions.length+' words':'Countdown paused'}</small></div><span>★ ${active.sortStars}</span></div>`:''}
     ${next?`<p class="sort-cue" role="status" data-phase="${sortPhase}">${sortCueText[sortPhase]}</p>`:''}
     <div class="word-portals" role="group" aria-label="Sound boxes">${board.categories.map((key,index)=>{
       const words=placed.filter(card=>card.correct===key);
@@ -346,12 +360,12 @@ function stopSortClock(){
 }
 function startSortClock(){
   stopSortClock();
-  if(!active.settings.sortTimed||active.sortPhase!=='pick'||active.sortRemaining<=0||document.hidden)return;
+  if(!active.settings.sortTimed||!active.sortStarted||active.score>=active.questions.length||active.sortRemaining<=0||document.hidden)return;
   const round=active;
   let last=performance.now();
   sortClock=setInterval(()=>{
     const now=performance.now();
-    if(active!==round||round.sortPhase!=='pick'){stopSortClock();return;}
+    if(active!==round||round.score>=round.questions.length){stopSortClock();return;}
     if(!document.hidden&&!guide.open&&!play.querySelector('.scene-sort .teacher-word[open]')){
       round.sortRemaining=Math.max(0,round.sortRemaining-(now-last));
       const clock=by('sort-clock');
@@ -365,8 +379,9 @@ function startSortClock(){
 function hearSort(){
   const next=active.questions[active.score];
   if(next){
-    stopSortClock();
+    active.sortStarted=true;
     say(next.entry.word,false,true);
+    startSortClock();
   }
 }
 function sortWord(portal) {
@@ -377,7 +392,6 @@ function sortWord(portal) {
     play.querySelector('.story-status').textContent=active.boardMessage;
     return;
   }
-  stopSortClock();
   const bonus=active.settings.sortTimed&&active.sortRemaining>0;
   if(bonus)active.sortStars++;
   active.score++;
@@ -388,7 +402,7 @@ function sortWord(portal) {
   if(following){
     hearSort();
     focusOption('[data-action=hearSort]');
-  } else focusOption('[data-action=finishSort]');
+  } else {stopSortClock();focusOption('[data-action=finishSort]');}
 }
 function flightPicture(word){
   const picture=reviewPicture(word);
@@ -1383,6 +1397,7 @@ atmosphere.innerHTML=Array.from({length:22},(_,i)=>'<span class="map-star" style
   [[18,25],[20,36],[45,61],[49,64],[80,63],[83,61]].map(([x,y],i)=>'<i class="map-window" style="--x:'+x+'%;--y:'+y+'%;--delay:-'+i+'s"></i>').join('');
 document.querySelector('.map').prepend(atmosphere);
 registerArcadeClips(['neck', 'fish', 'chess', 'puff', 'lodge', 'bats', 'string', 'cut', 'snap', 'cue', 'foot', 'street', 'fly', 'phone', 'dry', 'flew', 'bike', 'skate', 'sled', 'stop', 'mat', 'ridge', 'pat', 'my', 'fudge', 'pass', 'long', 'crew', 'shop', 'book', 'jam', 'glad', 'witch', 'doll', 'that', 'drum', 'boat', 'me', 'note', 'pie', 'rain', 'plane', 'back', 'play', 'gate', 'chip', 'rule', 'puppy', 'pin', 'plant', 'met', 'baby', 'split', 'cake', 'cat', 'green', 'cute', 'cook', 'hutch', 'cube', 'cot', 'flap', 'story-sled-medium', 'catch', 'frog', 'ring', 'plan', 'map', 'match', 'skip', 'pool', 'fang', 'hot', 'blotch', 'sick', 'story-sled-difficult', 'rang', 'time', 'sun', 'trap', 'chop', 'ham', 'roll', 'kite', 'grab', 'stretch', 'story-sled-simple', 'huff', 'crab', 'beach', 'red', 'chin', 'train', 'spot', 'toll', 'ben', 'spring', 'muss', 'coat', 'sit', 'sip', 'few', 'flag', 'step', 'swim', 'spray', 'hill', 'team', 'pig', 'beds', 'bat', 'these', 'stove', 'bunny', 'pen', 'edge', 'smile', 'home', 'bed', 'yellow', 'sin', 'etch', 'yell', 'fetch', 'theme', 'spin', 'brick', 'snow', 'float', 'splash', 'tie', 'brave', 'tape', 'hats', 'cap', 'scab', 'sleep', 'cup', 'strap', 'ten', 'sock', 'ram', 'bridge', 'press', 'clue', 'yard', 'clip', 'ball', 'block', 'cliff', 'kiss', 'light', 'night', 'stripe', 'clap', 'smell', 'pete', 'ran', 'glass', 'graph', 'sing', 'spoon', 'sang', 'story-magic-v2', 'dream', 'snack', 'grow', 'trail', 'boss', 'bell', 'doff', 'scrape', 'slide', 'skin', 'duck', 'zip', 'look', 'moon', 'this', 'gull', 'candy', 'badge', 'wall', 'mule', 'yes', 'strip', 'thin', 'gaff', 'food', 'bone', 'soon', 'gap', 'tall', 'dress', 'miss', 'pot', 'rope', 'tiff', 'grin', 'ship', 'thick', 'lids', 'sky', 'crack', 'suit', 'seeds', 'day', 'rock', 'fan', 'van', 'scrap', 'scrub', 'fruit', 'trip', 'story-short-v2', 'story-mixed-v2', 'flute', 'happy', 'seed', 'cats', 'black', 'slip', 'fill', 'den', 'spruce', 'shy']);
+registerArcadeClips([...consonantEntries,...endingEntries,...digraphEntries].map(entry=>entry.word));
 mountArcade({
   getSettings:()=>({...selection}),
   enter:()=>{returnToLobby();lobby.hidden=true;play.hidden=false;history.replaceState(null,'','#arcade');play.scrollIntoView({block:'start'});},

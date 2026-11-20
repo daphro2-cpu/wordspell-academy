@@ -1,3 +1,4 @@
+import {consonantEntries,endingEntries,digraphEntries} from './consonant-words.mjs?v=cvc21';
 import {bookWords, labels} from './bank.mjs?v=experience12';
 
 export const modes = [
@@ -10,8 +11,8 @@ export const modes = [
 ];
 
 export const levels={
-  simple:{title:'Simple', count:6, options:2, rank:0, hint:'Shorter rounds · more examples · guided practice'},
-  medium:{title:'Medium',count:8,options:3,rank:1,hint:'More practice · closer choices · help on request'},
+  simple:{title:'Simple', count:10, options:2, rank:0, hint:'Shorter rounds · more examples · guided practice'},
+  medium:{title:'Medium',count:10,options:3,rank:1,hint:'More practice · closer choices · help on request'},
   difficult:{title:'Difficult',count:10,options:4,rank:2,hint:'Trickier choices · fewer cues · read the sentence to fill each blank'},
 };
 
@@ -40,11 +41,11 @@ const contrasts={
     'o-u':['vowels','Short o vs. short u','o','u'],
     'n-ng':['endings','n, ng and m','n','ng','m'],
     'ts-ds':['endings','ts vs. ds','ts','ds'],
-    'f-v':['pairs','f vs. v','f','v'],
-    'p-b':['pairs','p vs. b','p','b'],
-    't-d':['pairs','t vs. d','t','d'],
-    'c-g':['pairs','c vs. g','c','g'],
-    's-z':['pairs','s vs. z','s','z'],
+    'f-v':['pairs','f vs. v — beginning sounds','f','v'],
+    'p-b':['pairs','p vs. b — beginning sounds','p','b'],
+    't-d':['pairs','t vs. d — beginning sounds','t','d'],
+    'c-g':['pairs','c / k vs. g — beginning sounds','c','g'],
+    's-z':['pairs','s vs. z — beginning sounds','s','z'],
     'sh-ch':['digraphs','sh vs. ch','sh','ch'],
     'two-th':['digraphs','The two th sounds','th-voiced','th-unvoiced'],
   },
@@ -65,6 +66,18 @@ export function matchFocus(book,group,entry) {
   if(book===2&&group==='longMixed')return ['magic','teams'].includes(entry.group);
   const contrast=contrasts[book][group];
   return contrast ? entry.group===contrast[0]&&contrast.slice(2).includes(entry.pattern) : entry.group===group;
+}
+
+export function practiceEntries(book,group){
+  const base=bookWords[book];
+  if(Number(book)!==1)return base.filter(e=>matchFocus(book,group,e));
+  const contrast=contrasts[1][group];
+  if(group==='vowels'||contrast?.[0]==='vowels')return uniqueWords([...base.filter(e=>e.group==='vowels'),...consonantEntries.map(e=>({...e,pattern:e.word[1],group:'vowels'}))]).filter(e=>matchFocus(1,group,e));
+  if(group==='endings'||contrast?.[0]==='endings')return uniqueWords([...endingEntries,...base.filter(e=>e.group==='endings')]).filter(e=>matchFocus(1,group,e));
+  if(group==='digraphs'||contrast?.[0]==='digraphs')return uniqueWords([...digraphEntries,...base.filter(e=>e.group==='digraphs')]).filter(e=>matchFocus(1,group,e));
+  if(group!=='pairs'&&contrast?.[0]!=='pairs')return base.filter(e=>matchFocus(book,group,e));
+  const cvc=base.filter(e=>/^[bcdfghjklmnpqrstvwxyz][aeiou][bcdfghjklmnpqrstvz]$/.test(e.word)).map(e=>({...e,pattern:e.word[0]==='k'?'c':e.word[0],group:'pairs'}));
+  return uniqueWords([...consonantEntries,...cvc]).filter(e=>Object.hasOwn({p:1,b:1,t:1,d:1,c:1,g:1,f:1,v:1,s:1,z:1},e.pattern)&&matchFocus(1,group,e));
 }
 
 function soundKey(book,e) {
@@ -103,6 +116,7 @@ function patternKey(book,e) {
 
 function ruleExplanation(book,e) {
   const p=e.pattern;
+  if(book===1&&e.group==='pairs')return 'Listen to the beginning sound in '+e.word+'. Compare it with the other beginning sound.';
   if (book===1 && e.group==='vowels') {
     const examples={a:['cat','mat'],e:['bed','pen'],i:['sit','pin'],o:['hot','pot'],u:['cup','sun']};
     const example=examples[p].find(word=>word!==e.word);
@@ -212,6 +226,7 @@ function spellingContrast(entry) {
 }
 function spellingMask(entry) {
   const {word,pattern}=entry;
+  if(entry.group==='pairs')return {mask:'_'+word.slice(1),answer:word[0]};
   if (pattern.endsWith('_e')) {
     const at=word.toLowerCase().indexOf(pattern[0]);
     return {mask:word.slice(0,at)+'_'+word.slice(at+1,-1)+'_',answer:pattern};
@@ -223,7 +238,7 @@ function spellingMask(entry) {
 }
 
 export function sortingBoard({book,group,level},rng=Math.random) {
-  const entries=bookWords[book].filter(entry=>matchFocus(book,group,entry));
+  const entries=practiceEntries(book,group);
   const family=shuffle([...new Set(entries.map(entry=>entry.group))],rng)[0];
   const pool=book===2&&group==='longMixed'?entries:entries.filter(entry=>entry.group===family);
   const getKey=group==='all-oll'
@@ -235,8 +250,8 @@ export function sortingBoard({book,group,level},rng=Math.random) {
   const groups=categories.map(key=>shuffle(pool.filter(entry=>getKey(entry)===key),rng));
   const prompt=group==='all-oll'?'Listen to the middle sound.':groupPrompt(book,pool[0]);
   const cards=[];
-  for(let pass=0;cards.length<levels[level].count&&groups.some(entries=>entries[pass]);pass++){
-    for(let index=0;index<groups.length&&cards.length<levels[level].count;index++){
+  for(let pass=0;cards.length<10&&groups.some(entries=>entries[pass]);pass++){
+    for(let index=0;index<groups.length&&cards.length<10;index++){
       const entry=groups[index][pass];
       if(entry)cards.push({entry,correct:categories[index]});
     }
@@ -294,7 +309,7 @@ function question(mode,book,e,all,level,rng,group,index,total) {
 
 export function createRound({book, mode, level, group='all', review},rng=Math.random) {
   book=Number(book);
-  const entries=bookWords[book].filter(e=>matchFocus(book,group,e));
+  const entries=practiceEntries(book,group);
   const all=group==='all'?entries:uniqueWords(entries);
   const settings=levels[level];
   const source=review??all;
@@ -314,7 +329,7 @@ export function createRound({book, mode, level, group='all', review},rng=Math.ra
   }
   for(const entry of pool) if(!selected.some(e=>e.word===entry.word)) selected.push(entry);
   const chosen=mode==='flight'&&!review&&selected.length
-    ? Array.from({length:5},(_,i)=>selected[i%selected.length])
+    ? Array.from({length:settings.count},(_,i)=>selected[i%selected.length])
     : selected.slice(0,review?selected.length:settings.count);
   return chosen.map((e,index)=>question(mode,book,e,all,settings,rng,group,index,chosen.length));
 }
