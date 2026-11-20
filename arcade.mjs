@@ -103,7 +103,7 @@ export function mountArcade({getSettings,enter,exit,speak,stopSpeech}){
     const topics=availableTopics(current.book,current.kind,current.game);
     if(current.phase==='setup'){
       const words=practicePool(current.book,current.level,current.game==='flashlight').length;
-      content='<div class="arcade-setup"><div><h2>Choose your challenge</h2><p role="status">'+esc(current.message)+'</p><label>Listen for a sound or look for a spelling?<select aria-label="Challenge type" data-arcade-setting="kind"><option value="sound" '+(current.kind==='sound'?'selected':'')+'>Sound — compare what you hear</option><option value="spelling" '+(current.book===1&&current.game==='mole'?'disabled ':'')+(current.kind==='spelling'?'selected':'')+'>Spelling — compare the letters</option></select></label><p class="mode-explanation">'+(current.kind==='sound'?'Sound: compare pronunciation. Practice a focused contrast, such as short e vs. short i or /ts/ vs. /dz/. Different spellings can make the same sound.':'Spelling: in the mole garden, catch an incorrect spelling and learn the rule. In the library, find a named sound AND spelling, such as long u /yoo/ spelled u_e, as in cute. The dot stands for a consonant.')+'</p>'+(current.game==='mole'&&current.kind==='sound'?'<label>Game task<select aria-label="Game task" data-arcade-setting="task"><option value="all" '+(current.task==='all'?'selected':'')+'>Whack all matching words</option><option value="odd" '+(current.task==='odd'?'selected':'')+'>Odd one out</option></select></label>':'')+'<label>Practice focus<select aria-label="Practice focus" data-arcade-setting="topic">'+topicOptions(topics)+'</select></label><p>Choose a comparison to practice only those sounds, or choose a target sound. Words rotate across plays.</p>'+(current.book===1&&current.game==='mole'?'<p>Spelling-rule challenges start in Book 2.</p>':'')+(current.game==='flashlight'?'<p>Find '+(current.level==='difficult'?13:10)+' different words in total. Small spelling groups use all available words without repeats.</p>':'')+'<label class="arcade-check"><input type="checkbox" data-arcade-setting="timed" '+(current.timed?'checked':'')+'>Gentle countdown</label><button type="button" class="primary" data-arcade-action="begin">Let’s explore →</button></div><div class="arcade-preview"><span class="'+(current.game==='mole'?'mole-sprite':'fox-sprite')+'"></span></div></div>';
+      content='<div class="arcade-setup"><div><h2>Choose your challenge</h2><p role="status">'+esc(current.message)+'</p><label>Listen for a sound or look for a spelling?<select aria-label="Challenge type" data-arcade-setting="kind"><option value="sound" '+(current.kind==='sound'?'selected':'')+'>Sound — compare what you hear</option><option value="spelling" '+(current.book===1&&current.game==='mole'?'disabled ':'')+(current.kind==='spelling'?'selected':'')+'>Spelling — compare the letters</option></select></label><p class="mode-explanation">'+(current.kind==='sound'?'Sound: compare pronunciation. Practice a focused contrast, such as short e vs. short i or /ts/ vs. /dz/. Different spellings can make the same sound.':'Spelling: in the mole garden, catch an incorrect spelling and learn the rule. In the library, find a named sound AND spelling, such as long u /yoo/ spelled u_e, as in cute. The dot stands for a consonant.')+'</p>'+(current.game==='mole'&&current.kind==='sound'?'<label>Game task<select aria-label="Game task" data-arcade-setting="task"><option value="all" '+(current.task==='all'?'selected':'')+'>Whack all matching words</option><option value="odd" '+(current.task==='odd'?'selected':'')+'>Odd one out</option></select></label>':'')+'<label>Practice focus<select aria-label="Practice focus" data-arcade-setting="topic">'+topicOptions(topics)+'</select></label><p>Choose a comparison to practice only those sounds, or choose a target sound. Words rotate across plays.</p>'+(current.book===1&&current.game==='mole'?'<p>Spelling-rule challenges start in Book 2.</p>':'')+(current.game==='flashlight'?'<p>Find '+(current.level==='difficult'?13:10)+' different words in total. Small spelling groups use all available words without repeats.</p>':'')+'<label class="arcade-check"><input type="checkbox" data-arcade-setting="timed" '+(current.timed?'checked':'')+'>'+(current.game==='mole'?'30-second game':'Gentle countdown')+'</label><button type="button" class="primary" data-arcade-action="begin">Let’s explore →</button></div><div class="arcade-preview"><span class="'+(current.game==='mole'?'mole-sprite':'fox-sprite')+'"></span></div></div>';
     }else if(current.phase==='done'){
       content='<div class="arcade-finish"><div class="fox-sprite celebrating" aria-hidden="true"></div><h2>The academy is glowing!</h2><p>'+current.score+' '+(current.game==='mole'?'moles helped.':'words found. Now read them aloud!')+'</p><p>Read aloud to send the magic books back to their shelves!</p>'+reviewBookcase()+'<button class="primary" type="button" data-arcade-action="replay">Explore new words →</button></div>';
     }else{
@@ -145,7 +145,7 @@ export function mountArcade({getSettings,enter,exit,speak,stopSpeech}){
   }
   function resetQuestion(reuse=false){
     current.moleElapsed=0;current.phase='playing';current.found=new Set();current.revealed=new Set();current.help=false;current.message='';
-    current.remaining=({simple:current.game==='mole'?30000:60000,medium:current.game==='mole'?25000:50000,difficult:current.game==='mole'?20000:45000}[current.level]);
+    if(current.game!=='mole')current.remaining=({simple:60000,medium:50000,difficult:45000}[current.level]);
     if(!reuse){
       current.question=buildArcadeQuestion({...current,excludedWords:current.game==='flashlight'?current.collected:[],targetLimit:current.game==='flashlight'?current.wordGoal-current.score:Infinity},(entries,count)=>chooseEntries(entries,count,current));
       current.question.options=current.question.options.map(e=>({...e,clip:clipWords.has(e.word)}));
@@ -169,6 +169,7 @@ export function mountArcade({getSettings,enter,exit,speak,stopSpeech}){
     next();
   }
   function begin(){
+    if(current.game==='mole')current.remaining=30000;
     current.total=(current.game==='mole'&&current.kind==='sound'&&current.task==='all'?{simple:2,medium:3,difficult:4}:{simple:6,medium:8,difficult:10})[current.level];current.collected=[];
     try{if(current.game==='flashlight')current.wordGoal=flashlightGoal(current);resetQuestion();}catch(error){current.phase='setup';current.message=error.message;render();return;}
     clearInterval(clock);
@@ -176,10 +177,15 @@ export function mountArcade({getSettings,enter,exit,speak,stopSpeech}){
       if(!current)return;
       const now=performance.now(),delta=now-current.lastTick;current.lastTick=now;
       if(current.paused||current.speaking||document.hidden||document.getElementById('guide')?.open)return;
+      if(current.game==='mole'&&current.timed&&['playing','cleared'].includes(current.phase)){
+        current.remaining=Math.max(0,current.remaining-delta);
+        const number=host.querySelector('.arcade-clock b');if(number)number.textContent=Math.ceil(current.remaining/1000);
+        if(current.remaining===0){finishGame();return;}
+      }
       if(current.phase==='cleared'){current.clearedFor=(current.clearedFor??0)+delta;if(current.clearedFor>=(current.question.rule?5500:current.game==='mole'?900:1800))nextQuestion();return;}
       if(current.phase!=='playing')return;
       current.moleElapsed+=delta;updateMoles();
-      if(!current.timed)return;
+      if(!current.timed||current.game==='mole')return;
       current.remaining=Math.max(0,current.remaining-delta);
       const number=host.querySelector('.arcade-clock b');
       if(number)number.textContent=Math.ceil(current.remaining/1000);
@@ -249,13 +255,17 @@ export function mountArcade({getSettings,enter,exit,speak,stopSpeech}){
       if(done){bookReader.stop();host.querySelector('[data-arcade-action="bookConfirm"]').disabled=true;host.querySelector('[data-arcade-action="bookMic"]').disabled=true;host.querySelector('[data-arcade-action="bookTeacher"]').disabled=true;playVoiceSuccess();host.querySelector('.book-review').classList.add('all-lit');host.querySelector('#book-mic-status').textContent='You sent every book home!';}else host.querySelector('[data-review-book="'+next+'"]').classList.add('is-current');
     },1000);
   }
+  function finishGame(){
+    current.phase='done';clearInterval(clock);stopSpeech();effect.pause();roundVoice.pause();
+    current.bookQuietUntil=performance.now()+700;render();bookReader.start();
+  }
   function nextQuestion(){
     if(!current||current.phase!=='cleared')return;
     if(current.game==='mole'&&current.kind==='sound'&&current.task==='all'&&current.wave<2){
       current.wave++;current.pinnedSound=current.question.topic;resetQuestion();return;
     }
     current.wave=0;current.pinnedSound=null;current.round++;
-    if(current.game==='flashlight'?current.score>=current.wordGoal:current.round>=current.total){current.phase='done';stopSpeech();effect.pause();roundVoice.pause();current.bookQuietUntil=performance.now()+700;render();bookReader.start();return;}
+    if(current.game==='flashlight'?current.score>=current.wordGoal:current.round>=current.total){finishGame();return;}
     const revisit=current.game==='flashlight'?null:current.retry.find(q=>q.at<=current.round);
     if(revisit){current.retry.splice(current.retry.indexOf(revisit),1);current.question=revisit.question;resetQuestion(true);}
     else resetQuestion();
