@@ -1,4 +1,4 @@
-import {possibleVowelSpellings} from './vowel-spellings.mjs?v=possible27';
+import {possibleVowelSpellings} from './vowel-spellings.mjs?v=all29';
 import {consonantEntries,endingEntries,digraphEntries} from './consonant-words.mjs?v=cvc21';
 import {bookWords, labels} from './bank.mjs?v=tap25';
 

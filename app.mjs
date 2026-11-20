@@ -4,7 +4,7 @@ import {VoiceHold,VOICE_GOAL,VOICE_HOLD_MS,voiceLevel} from './voice-hold.mjs?v=
 import {mountArcade,registerArcadeClips} from './arcade.mjs?v=quick26';
 import {playSpinSound,playReelStop,stopSpinSound,playVoiceSuccess} from './effects.mjs?v=arcade1';
 import {catalog} from './bank.mjs?v=tap25';
-import {modes,levels,createRound,sortingBoard,practiceContrasts,shuffle,choiceLabel,isVowelTile} from './engine.mjs?v=possible27';
+import {modes,levels,createRound,sortingBoard,practiceContrasts,shuffle,choiceLabel,isVowelTile} from './engine.mjs?v=all29';
 
 import {missions,flightMission} from './missions.mjs?v=listen-sort';
 import {makeStory} from './story.mjs?v=tap25';
