@@ -173,3 +173,20 @@
  .mole .arcade-word:nth-of-type(n+4){width:30%;left:calc(5% + var(--column)*30%)}
  .mole-window{height:165px;bottom:22px}.mole-window .mole-rise{height:165px}.burrow-back,.burrow-front{height:58px}
 }
+
+/* Keep the painted mole square so label coordinates match at every size. */
+.mole-window .mole-rise{width:min(100%,240px);height:auto!important;aspect-ratio:1;bottom:0}
+.mole .mole-rise .word-sign{display:flex;align-items:center;justify-content:center;text-align:center;left:49%;top:69%;bottom:auto;transform:translate(-50%,-50%);width:80%;max-width:80%;height:22%;padding:0!important;line-height:1;white-space:nowrap;overflow-wrap:normal;word-break:normal;hyphens:none}
+
+/* A threshold pass is unmistakable, including native browser meter states. */
+.reading-control.voice-passed{background:#174c34;outline:3px solid #69ef84;box-shadow:0 0 28px #54ff8870}
+.reading-control meter{appearance:none;-webkit-appearance:none;border:0;border-radius:16px;overflow:hidden;background:#20172e}
+.reading-control meter::-webkit-meter-bar{height:100%;border:1px solid #a58d70;border-radius:16px;background:#e8dfce}
+.reading-control meter::-webkit-meter-optimum-value,.reading-control meter::-webkit-meter-suboptimum-value,.reading-control meter::-webkit-meter-even-less-good-value{background:#e7b656;border-radius:16px}
+.reading-control meter::-moz-meter-bar{background:#e7b656;border-radius:16px}
+.reading-control.voice-passed meter{background:#35db68;box-shadow:0 0 18px #64ff8d}
+.reading-control.voice-passed meter::-webkit-meter-bar{background:#35db68;border-color:#b6ffca}
+.reading-control.voice-passed meter::-webkit-meter-optimum-value,.reading-control.voice-passed meter::-webkit-meter-suboptimum-value,.reading-control.voice-passed meter::-webkit-meter-even-less-good-value{background:#35db68}
+.reading-control.voice-passed meter::-moz-meter-bar{background:#35db68}
+.reading-control.voice-passed label>span:last-child{color:#8aff9b;text-shadow:0 0 15px #75ff94;transform:scale(1.35)}
+.reading-control.voice-passed #book-mic-status{color:#c6ffd1;font-weight:800;font-size:clamp(26px,3vw,38px)!important}

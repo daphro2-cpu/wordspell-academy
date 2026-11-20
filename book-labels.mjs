@@ -1,4 +1,4 @@
-const selector='.review-book strong,.shelved-book strong,.flashlight .word-sign';
+const selector='.review-book strong,.shelved-book strong,.flashlight .word-sign,.mole .word-sign';
 export function fitBookLabels(root,styleFor=element=>getComputedStyle(element)){
  const labels=[...root.querySelectorAll(selector)];
  // Restore the responsive base size before measuring, so labels can grow again on a larger display.
@@ -19,7 +19,7 @@ export function watchBookLabels(root){
  let frame,stopped=false;
  const schedule=()=>{if(stopped)return;cancelAnimationFrame(frame);frame=requestAnimationFrame(()=>fitBookLabels(root));};
  const observer=typeof ResizeObserver==='undefined'?null:new ResizeObserver(schedule);
- root.querySelectorAll('.review-bookcase,.returned-bookshelf,.arcade-field.flashlight').forEach(node=>observer?.observe(node));
+ root.querySelectorAll('.review-bookcase,.returned-bookshelf,.arcade-field.flashlight,.arcade-field.mole').forEach(node=>observer?.observe(node));
  window.addEventListener('resize',schedule);
  document.fonts?.addEventListener('loadingdone',schedule);
  document.fonts?.ready.then(schedule);
