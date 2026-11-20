@@ -272,7 +272,7 @@ export function mountArcade({getSettings,enter,exit,speak,stopSpeech}){
     }
     const wordButton=event.target.closest('[data-arcade-word]');
     if(wordButton&&current.phase==='playing'&&!current.paused&&!current.speaking){
-      if(current.game==='mole'&&wordButton.classList.contains('burrowed')&&!wordButton.matches(':focus-visible'))return;
+      if(current.game==='mole'&&wordButton.classList.contains('burrowed')&&!wordButton.matches(':focus-visible')&&!event.target.closest('.mole-rise'))return;
       const entry=current.question.options[Number(wordButton.dataset.arcadeWord)];
       if(current.game==='flashlight'&&!current.revealed.has(entry.word)){reveal(wordButton);return;}
       if(current.question.correct.has(entry.word)){

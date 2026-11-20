@@ -190,3 +190,8 @@
 .reading-control.voice-passed meter::-moz-meter-bar{background:#35db68}
 .reading-control.voice-passed label>span:last-child{color:#8aff9b;text-shadow:0 0 15px #75ff94;transform:scale(1.35)}
 .reading-control.voice-passed #book-mic-status{color:#c6ffd1;font-weight:800;font-size:clamp(26px,3vw,38px)!important}
+
+/* Empty burrow buttons must not cover a visible mole's word in another row. */
+.mole .arcade-word{pointer-events:none}
+.mole .mole-window .mole-rise{pointer-events:auto}
+.mole .arcade-word.collected .mole-rise{pointer-events:none}
