@@ -1,5 +1,5 @@
-import {VoiceHold,voiceLevel} from './voice-hold.mjs?v=hold11';
-// Same 1.5-second star hold as Blend Bridge; one pass returns one book.
+import {VoiceHold,voiceLevel} from './voice-hold.mjs?v=reading15';
+// Shared detected-voice duration rule; one pass returns one book.
 export class VoiceTurn extends VoiceHold{constructor(){super({rearmAfterPass:true});}}
 export function createBookReader({onLevel,onRead,onStatus,onProgress=()=>{},canRead=()=>true}){
  let stream,context,analyser,frame,token=0,last=0,enabled=false;
@@ -16,7 +16,7 @@ export function createBookReader({onLevel,onRead,onStatus,onProgress=()=>{},canR
    track.onended=()=>{if(request===token){stop();onStatus('Microphone disconnected. No books will move. Reconnect it or choose Teacher check — no microphone.');}};
    const AC=window.AudioContext??window.webkitAudioContext;context=new AC();await context.resume();
    analyser=context.createAnalyser();analyser.fftSize=1024;context.createMediaStreamSource(stream).connect(analyser);
-   const samples=new Float32Array(analyser.fftSize);enabled=true;turn.reset();last=performance.now();onStatus('Read aloud. Keep your sound at the star for 1.5 seconds.');
+   const samples=new Float32Array(analyser.fftSize);enabled=true;turn.reset();last=performance.now();onStatus('Read the highlighted word aloud.');
    function tick(now){
     if(!enabled||request!==token)return;
     const dt=Math.min(80,now-last);last=now;analyser.getFloatTimeDomainData(samples);

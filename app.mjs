@@ -1,5 +1,5 @@
-import {VoiceHold,VOICE_GOAL,VOICE_HOLD_MS,voiceLevel} from './voice-hold.mjs?v=hold11';
-import {mountArcade,registerArcadeClips} from './arcade.mjs?v=hold11';
+import {VoiceHold,VOICE_GOAL,VOICE_HOLD_MS,voiceLevel} from './voice-hold.mjs?v=reading15';
+import {mountArcade,registerArcadeClips} from './arcade.mjs?v=reading15';
 import {playSpinSound,playReelStop,stopSpinSound,playVoiceSuccess} from './effects.mjs?v=arcade1';
 import {catalog} from './bank.mjs?v=experience12';
 import {modes,levels,createRound,sortingBoard,practiceContrasts,shuffle,choiceLabel,isVowelTile} from './engine.mjs?v=experience12';
@@ -516,15 +516,16 @@ function catchFlyingWord(button,word){
   queueFlightWord();
 }
 function nextStoryTarget(page,found){
-  return page.ordered?page.targets.find(word=>!found.has(word)):undefined;
+  return page.targets.find(word=>word===active.storyTarget&&!found.has(word))??page.targets.find(word=>!found.has(word));
 }
-function restoredText(page,found) {
+function restoredText(page,found,interactive=false) {
   const next=nextStoryTarget(page,found);
   return esc(page.sentence).replace(/\{([^}]+)\}/g,(_,word)=>{
     const key=word.toLowerCase();
     if(found.has(key))return '<strong class="sentence-insert">'+word+'</strong>';
-    return key===next?'<span class="ink-blank ink-blank-next" aria-label="Fill this blank next">___</span>':
-      '<span class="ink-blank" aria-label="missing word">___</span>';
+    if(!interactive)return '<span class="ink-blank" aria-label="missing word">___</span>';
+    const number=page.targets.indexOf(key)+1;
+    return '<span class="story-blank-slot'+(key===next?' is-active':'')+'"><span class="ink-blank'+(key===next?' ink-blank-next':'')+'" aria-label="Missing word '+number+'">___</span><button class="quiet story-audio-clue" type="button" data-story-clue="'+esc(key)+'" aria-label="Hear clue for blank '+number+'" aria-pressed="'+(key===next)+'"><span aria-hidden="true">◖))</span> Hear the clue</button></span>';
   });
 }
 function storyIllustration(page){
@@ -544,9 +545,9 @@ function storyView(mission) {
   const content=done
     ? `<h2>You brought the words back!</h2><div class="story-scroll">${active.questions.map(page=>'<figure class="restored-page">'+storyIllustration(page)+'<p>'+restoredText(page,new Set(page.targets))+'</p></figure>').join('')}</div>
       <div class="play-actions"><button class="primary" data-action="readStory" type="button">Read with me</button><button class="quiet" data-action="replay" type="button">Play again</button></div><p id="story-read-note" role="status"></p>${wordReview(active.questions.flatMap(page=>page.targets.map(word=>({word}))),true)}`
-    : `<h2>${esc(q.clue)}</h2>${q.anchor?`<div class="story-clue"><strong>Example word: ${esc(q.anchor)}</strong>${audioButton(q.anchor,'Hear the example')}</div>`:''}
-      <p class="story-directions">${q.ordered?'Tap the word that fits the highlighted blank. Some choices match the sound clue but don’t fit the story.':(q.anchor?'Use the example to help you. ':'')+(q.anchor&&q.middle&&!q.matchSpelling?'Read the choices. Tap the words with the same sound in the middle.':'Read the choices. Tap the words that match the clue.')+' The words you tap go in the blanks.'}</p>
-      <div class="story-scroll"><figure class="restored-page">${storyIllustration(q)}<p>${restoredText(q,active.found)}</p></figure></div>
+    : `<h2>Listen and complete the story.</h2>
+      <p class="story-directions">Tap Hear the clue under a blank. Listen, then choose the written word for that blank.</p>
+      <div class="story-scroll"><figure class="restored-page">${storyIllustration(q)}<p>${restoredText(q,active.found,true)}</p></figure></div>
       <div class="choices story-words" role="group" aria-label="Words to find">${q.options.map(word=>'<button class="option'+(active.found.has(word)?' correct':'')+'" type="button" data-story-word="'+esc(word)+'" '+(active.found.has(word)||complete?'disabled':'')+'>'+esc(word)+'</button>').join('')}</div>
       <p role="status" class="story-status">${esc(active.storyMessage||active.found.size+' of '+q.targets.length+' words found')}</p>
       ${complete?'<div class="play-actions"><button class="primary" data-action="storyNext" type="button">'+(active.index+1===active.questions.length?'Read the story':'Next page')+' →</button></div>':''}`;
@@ -564,12 +565,12 @@ function catchWord(word) {
   const q=question();
   const next=nextStoryTarget(q,active.found);
   if(active.found.has(word)||active.found.size===q.targets.length)return;
-  if(q.ordered?word===next:q.targets.includes(word)) {
+  if(word===next) {
     active.found.add(word);
+    active.storyTarget=null;
     active.storyMessage=active.found.size===q.targets.length?'You found all the words!':'You found '+active.found.size+' of '+q.targets.length+' words.';
   } else {
-    active.storyMessage=q.ordered?'Read the sentence and look at the picture. Which word fits this blank?':
-      q.middle?'Try again. Say the word and listen to its middle sound.':'Try again. Read the word and look for the clue pattern.';
+    active.storyMessage='Listen to the clue for the highlighted blank, then choose the matching word.';
   }
   render();
   (play.querySelector('[data-action=storyNext]')??[...play.querySelectorAll('[data-story-word]:enabled')].find(el=>el.dataset.storyWord===word)??play.querySelector('[data-story-word]:enabled'))?.focus({preventScroll:true});
@@ -704,8 +705,8 @@ function readControls(q){
   const next=active.index+1===active.questions.length?'Finish':'Next word';
   return `<div class="read-controls">
     ${fallback?'':`<div class="voice-meter ${ready?'heard':''}" style="--voice-goal:${voiceGoal}%">
-      <div class="voice-meter-top"><strong id="voice-meter-label">Voice power</strong><span>${ready?'✓ You did it!':'Hold the star for 1.5 seconds'}</span></div>
-      <small id="voice-hold-time">0.0 / 1.5 seconds</small><div class="voice-track"><meter id="voice-level" aria-labelledby="voice-meter-label" min="0" max="100" value="${ready?100:0}"></meter><span class="voice-goal" aria-hidden="true">★</span></div>
+      <div class="voice-meter-top"><strong id="voice-meter-label">Read aloud</strong><span>${ready?'✓ You did it!':'Read the word aloud'}</span></div>
+      <div class="voice-track"><meter id="voice-level" aria-labelledby="voice-meter-label" min="0" max="100" value="${ready?100:0}"></meter><span class="voice-goal" aria-hidden="true">★</span></div>
     </div>`}
     <p class="mic-status ${ready?'voice-success':''}" role="status" tabindex="-1">${esc(status)}</p>
     ${fallback||ready?'':`<button class="quiet" type="button" data-action="${mic?'cancelMic':'readMic'}">${mic?'Stop mic':'Start mic'}</button>`}
@@ -741,10 +742,10 @@ async function startMic(){
       const meter=by('voice-level');if(meter)meter.value=level;
       if(!eligible)session.hold.reset();
       else if(session.hold.feed(level,dt)){finishSpokenWord(round);return;}
-      const progress=by('voice-hold-time');if(progress)progress.textContent=(session.hold.held/1000).toFixed(1)+' / '+(VOICE_HOLD_MS/1000)+' seconds';
+
       session.frame=requestAnimationFrame(listen);
     };
-    round.micMessage='Read aloud. Keep your sound at the star for 1.5 seconds. Your teacher checks the reading.';
+    round.micMessage='Read the word aloud to build the bridge.';
     if(round.spin===true)render();session.frame=requestAnimationFrame(listen);
   }catch{if(mic===session)micUnavailable(round);}
 }
@@ -1171,6 +1172,7 @@ const actions={
     active.index++;
     if(active.index===active.questions.length)awardRune();
     active.found.clear();
+    active.storyTarget=null;
     active.storyMessage='';
     render();
     play.querySelector('h1')?.focus({preventScroll:true});
@@ -1187,6 +1189,16 @@ document.addEventListener('click',e=>{
   if(d.game){start({...selection,mode:d.game});return;}
   if('closeGuide' in d){guide.close();return;}
   if(!active)return;
+  if(d.storyClue){
+    const page=question();
+    if(active.settings.mode!=='context'||!page.targets.includes(d.storyClue)||active.found.has(d.storyClue))return;
+    active.storyTarget=d.storyClue;
+    active.storyMessage='Listen, then choose the word for the highlighted blank.';
+    render();
+    [...play.querySelectorAll('[data-story-clue]')].find(el=>el.dataset.storyClue===d.storyClue)?.focus({preventScroll:true});
+    say(d.storyClue);
+    return;
+  }
   if(d.audio){
     if(d.forgeHear!==undefined)selectForgeCard(Number(d.forgeHear));
     if(mic){stopListening();active.micMessage='Mic stopped. Tap Start mic when you are ready.';render();}

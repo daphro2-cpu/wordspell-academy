@@ -25,7 +25,7 @@ function entrySound(entry,book){
 }
 const extra={
   1:{
-    p:['p','pig pen pin pot pan pet peg pit pup pack'],b:['b','bat bed bag big bug bin bun bus back'],t:['t','ten tin tap top tub tag tip tan'],d:['d','den dog dig dot dad dip duck'],k:['k','kit kid kin kick king keep'],g:['g','gap gas get gum got gate'],f:['f','fan fin fit fog fun fat'],v:['v','van vet vest vat vine vote'],s:['s','sun sit sip sad set sock'],z:['z','zip zoo zap zest zing zone'],
+    p:['p','pig pen pin pot pan pet peg pit pup pack pat puff pass pick peel pink park pond pine pole pipe play'],b:['b','bat bed bag big bug bin bun bus back bet bit bud bump bent best belt bank bark bake bean boat blue'],t:['t','ten tin tap top tub tag tip tan tent test text tell toss tack tank tick tock take time team tree'],d:['d','den dog dig dot dad dip duck dam dull dish deck dust dent dump desk dark deep dime date door'],k:['k','kit kid kin kick king keep keen kite'],g:['g','gap gas get gum got gate gut gag gig gold gift grin grab glad grass green goat goose'],f:['f','fan fin fit fog fun fat fed fix fox fill fell fuss fetch flap flip flag frog flat fresh'],v:['v','van vet vest vat vine vote vex volt vast veil vase vent very'],s:['s','sun sit sip sad set sock sat sob sum sap sag six sell sack sand sent slip step stop'],z:['z','zip zoo zap zest zing zone zed zoom zigzag zero zebra'],
     a:['a','bag rag tag wag cap tap gap lap nap bat fat hat rat sad mad pad dad jam ham ram fan man pan van tan can'],
     e:['e','hen ten men den net pet wet jet get leg peg red fed led beg gem yet set'],
     i:['i','big dig fig wig bin fin tin win hit bit fit kit lip dip rip sip zip lid kid hid'],
@@ -129,13 +129,13 @@ export function availableTopics(book,kind,game){
   const targets=[...new Set(entries.map(e=>e.sound))].filter(key=>new Set(entries.filter(e=>e.sound===key).map(e=>e.word)).size>=3).map(key=>({key,label:labelSound(key),category:targetCategory(book,key)}));
   return [...contrasts,...targets];
 }
-export function practicePool(book,level){
+export function practicePool(book,level,expanded=false){
   const entries=arcadeBank.filter(e=>e.book===Number(book));
   if(level==='difficult')return entries;
   const groups=Object.groupBy?Object.groupBy(entries,e=>e.pattern+'|'+e.sound):entries.reduce((a,e)=>{(a[e.pattern+'|'+e.sound]??=[]).push(e);return a;},{});
   return Object.values(groups).flatMap(group=>{
     const sorted=[...group].sort((a,b)=>Number(Boolean(b.core))-Number(Boolean(a.core))||a.word.length-b.word.length);
-    return sorted.slice(0,level==='simple'?5:14);
+    return sorted.slice(0,expanded?(level==='simple'?14:20):level==='simple'?5:14);
   });
 }
 export function spellingFocus(pattern,sound){
@@ -143,7 +143,7 @@ export function spellingFocus(pattern,sound){
  const focus=(sound===pattern?names[pattern]:null)??labelSound(sound);
  return focus+' — spelled '+labelPattern(pattern);
 }
-export function buildArcadeQuestion({book,level,kind,topic,game,task='all',pinnedSound=null},choose){
+export function buildArcadeQuestion({book,level,kind,topic,game,task='all',pinnedSound=null,excludedWords=[],targetLimit=Infinity},choose){
  if(kind==='spelling'&&game==='mole')return ruleQuestion({book,level,kind,topic,game},choose);
  const spec=contrastFor(book,topic);
  let contrast=spec?.[2]??null;
@@ -152,9 +152,13 @@ export function buildArcadeQuestion({book,level,kind,topic,game,task='all',pinne
   let targetSound=null;
   if(kind==='spelling'){const parts=topic.split('::');topic=parts[0];targetSound=parts[1]??null;}
   const ambiguous=new Set(['bow','sow','row','read','tune','new','knew','due','dew']);
-  const pool=practicePool(book,level).filter(e=>Number(book)!==1||!contrast||!['n','ng','m','ts','ds'].includes(topic)||e.group==='endings').filter(e=>kind==='spelling'||!ambiguous.has(e.word)).filter(e=>Number(book)!==1||!spec||spec[3]!=='Compare beginning consonants'||e.group==='pairs').filter(e=>Number(book)!==1||!spec||spec[3]!=='Compare ending sounds'||e.group==='endings');
+  const pool=practicePool(book,level,game==='flashlight').filter(e=>Number(book)!==1||!contrast||!['n','ng','m','ts','ds'].includes(topic)||e.group==='endings').filter(e=>kind==='spelling'||!ambiguous.has(e.word)).filter(e=>Number(book)!==1||!spec||spec[3]!=='Compare beginning consonants'||e.group==='pairs').filter(e=>Number(book)!==1||!spec||spec[3]!=='Compare ending sounds'||e.group==='endings');
   const field=kind==='spelling'?'pattern':'sound';
   if(kind==='spelling'&&!targetSound)targetSound=pool.find(e=>e.pattern===topic)?.sound;
+  const excluded=new Set(excludedWords);
+  if(game==='flashlight'&&contrast&&!pool.some(e=>e[field]===topic&&!excluded.has(e.word))){
+    topic=contrast.find(key=>pool.some(e=>e[field]===key&&!excluded.has(e.word)))??topic;
+  }
   let targets=pool.filter(e=>e[field]===topic&&(kind!=='spelling'||e.sound===targetSound));
   const exemplar=targets[0];
   if(Number(book)===1&&!contrast&&exemplar)targets=targets.filter(e=>e.group===exemplar.group);
@@ -174,8 +178,20 @@ export function buildArcadeQuestion({book,level,kind,topic,game,task='all',pinne
   }
   if(!targets.length||!other.length)throw new Error('Choose another topic for this round.');
   const targetCount=game==='mole'?({simple:2,medium:3,difficult:3}[level]):({simple:3,medium:4,difficult:5}[level]);
-  const matching=choose(targets,targetCount);
+  const matching=choose(targets.filter(e=>game!=='flashlight'||!excluded.has(e.word)),Math.min(targetCount,targetLimit));
+  if(!matching.length)throw new Error('All the words in this focus have been found.');
   const distractors=choose(other,game==='mole'?(task==='odd'?1:3):targetCount);
   const options=[...matching,...distractors].sort(()=>Math.random()-.5);
   return {options,task,targetSound,focusLabel:kind==='spelling'?spellingFocus(topic,exemplar.sound):labelSound(topic),position:Number(book)===1&&['n','ng','m','ts','ds'].includes(topic)?'end':spec?(spec[3].includes('ending')?'end':spec[3].includes('vowel')?'middle':spec[3].includes('digraph')?'anywhere':spec[3].includes('sounds of y')?'final y':'start'):Number(book)===1?(exemplar.group==='vowels'?'middle':exemplar.group==='endings'?'end':exemplar.group==='digraphs'?'anywhere':'start'):Number(book)===2?(exemplar.group==='finals'?'end':'vowel'):(exemplar.group==='y'?'final y':'start'),correct:new Set((game==='mole'&&task==='odd'?distractors:matching).map(e=>e.word)),field,topic};
+}
+
+export function flashlightGoal(state){
+  const spec=contrastFor(state.book,state.topic);
+  const sounds=spec?.[2]??[null];
+  const words=new Set();
+  for(const pinnedSound of sounds){
+    const q=buildArcadeQuestion({...state,game:'flashlight',pinnedSound,excludedWords:[],targetLimit:Infinity},entries=>entries);
+    q.correct.forEach(word=>words.add(word));
+  }
+  return Math.min(state.level==='difficult'?13:10,words.size);
 }
