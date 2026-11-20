@@ -1,13 +1,13 @@
 import {wordAudioCues} from './word-audio-cues.mjs?v=cvc21';
 import {consonantEntries,endingEntries,digraphEntries} from './consonant-words.mjs?v=cvc21';
 import {VoiceHold,VOICE_GOAL,VOICE_HOLD_MS,voiceLevel} from './voice-hold.mjs?v=reading15';
-import {mountArcade,registerArcadeClips} from './arcade.mjs?v=soil24';
+import {mountArcade,registerArcadeClips} from './arcade.mjs?v=tap25';
 import {playSpinSound,playReelStop,stopSpinSound,playVoiceSuccess} from './effects.mjs?v=arcade1';
-import {catalog} from './bank.mjs?v=soil24';
-import {modes,levels,createRound,sortingBoard,practiceContrasts,shuffle,choiceLabel,isVowelTile} from './engine.mjs?v=soil24';
+import {catalog} from './bank.mjs?v=tap25';
+import {modes,levels,createRound,sortingBoard,practiceContrasts,shuffle,choiceLabel,isVowelTile} from './engine.mjs?v=tap25';
 
 import {missions,flightMission} from './missions.mjs?v=listen-sort';
-import {makeStory} from './story.mjs?v=soil24';
+import {makeStory} from './story.mjs?v=tap25';
 import {reviewPicture} from './review.mjs?v=word-clues';
 
 const by=id=>document.getElementById(id);
@@ -321,13 +321,13 @@ function sortView(mission) {
   const {questions,board,score,sortPhase}=active;
   const canPick=sortPhase==='pick';
   const next=questions[score];
-  const spellingSort=active.settings.book===2&&['long-a','long-e','long-i','long-o','long-u'].includes(active.settings.group);
+  const spellingSort=active.settings.book===2&&['long-a','long-e','long-i','long-o','long-u','oo'].includes(active.settings.group);
   const placed=questions.slice(0,score);
   return `<article class="stage mission scene-sort"><header class="mission-header"><div><h1 tabindex="-1">The Sorting Hall</h1><p class="mission-objective">Listen and bring the words home.</p></div><span class="mission-count">${score} of ${questions.length} words sorted</span></header>
     <div class="scene-grid"><div class="task">
     <h2>${next?(spellingSort?'Hear and read. Sort the spelling.':'Hear the word. Tap its box.'):'Yay! All the words are home.'}</h2>
-    ${next?`<p class="prompt">${spellingSort?'These spellings make the same vowel sound. Look at the letters and choose a box.':esc(board.prompt)+' The word will appear when you tap the right box.'}</p>
-      <div class="sort-listen"><span aria-hidden="true">☁</span>${spellingSort?'<strong class="sort-spelling-word">'+esc(next.entry.word)+'</strong>':''}<button class="quiet audio" type="button" data-action="hearSort">◖)) ${sortPhase==='ready'?'Hear the word':'Hear it again'}</button></div>
+    ${next?`<p class="prompt">${spellingSort?'Read the word and sort its spelling. Some are made-up spellings to decode.':esc(board.prompt)+' The word will appear when you tap the right box.'}</p>
+      <div class="sort-listen"><span aria-hidden="true">☁</span>${spellingSort?'<strong class="sort-spelling-word">'+esc(next.entry.word)+'</strong>'+(next.entry.nonsense?'<small class="made-up-label">Made-up spelling</small>':''):''}<button class="quiet audio" type="button" data-action="hearSort">◖)) ${sortPhase==='ready'?'Hear the word':'Hear it again'}</button></div>
       <details class="teacher-word"><summary>Teacher word</summary><p>${esc(next.entry.word)}</p></details>
       <div class="sort-challenge"><button type="button" class="quiet" data-action="toggleSortChallenge" aria-pressed="${Boolean(active.settings.sortTimed)}">Timer ${active.settings.sortTimed?'on':'off'}</button>
       <div class="sort-timer ${active.settings.sortTimed?'':'timer-disabled'}"><span id="sort-clock" role="timer">${sortClockText()}</span><progress id="sort-round-progress" aria-label="Time left for this word" max="${sortTime[active.settings.level]*1000}" value="${active.sortRemaining}"></progress><small>${active.settings.sortTimed?'3 seconds per word · starts after the audio':'Countdown paused'}</small><span id="sort-warning" role="status"></span></div><span>★ ${active.sortStars}</span></div>`:''}
@@ -396,7 +396,7 @@ function hearSort(){
   if(next){
     stopSortClock();
     active.sortRemaining=sortTime[active.settings.level]*1000;
-    say(next.entry.word,false,true);
+    say(next.entry.modelWord??next.entry.word,false,true);
   }
 }
 function sortWord(portal) {
@@ -975,7 +975,7 @@ function addLetter(letter){
   play.querySelector('[data-letter="'+letter+'"]')?.focus({preventScroll:true});
 }
 function wordReview(entries,storyOnly=false){
-  const words=[...new Map(entries.map(entry=>[entry.word.toLowerCase(),entry])).values()];
+  const words=[...new Map(entries.filter(entry=>!entry.nonsense).map(entry=>[entry.word.toLowerCase(),entry])).values()];
   return `<section class="word-review" aria-label="Read the words again"><h2>Read the words again</h2><p>${storyOnly?'Read each word, then tap Hear it to check.':'Read a word. Then tap it to see the picture.'}</p>
     <div class="review-cards">${words.map(entry=>{
       const word=entry.word;

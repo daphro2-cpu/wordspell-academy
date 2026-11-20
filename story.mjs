@@ -1,5 +1,5 @@
-import {bookWords} from './bank.mjs?v=soil24';
-import {choiceLabel, matchFocus, shuffle, practiceEntries} from './engine.mjs?v=soil24';
+import {bookWords} from './bank.mjs?v=tap25';
+import {choiceLabel, matchFocus, shuffle, practiceEntries} from './engine.mjs?v=tap25';
 
 const mixedStory=[
   {sentence:'A {cat} sat on a {mat}.', art:'cat-mat', imageAlt:'An orange cat sits on a mat.', anchor:'map', middle:true, clue:'Find 2 short a words.', targets:['cat','mat'], decoys:['bed','pin','cup'], extra:'pot', tricky:'sat'},

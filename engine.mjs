@@ -1,5 +1,5 @@
 import {consonantEntries,endingEntries,digraphEntries} from './consonant-words.mjs?v=cvc21';
-import {bookWords, labels} from './bank.mjs?v=soil24';
+import {bookWords, labels} from './bank.mjs?v=tap25';
 
 export const modes = [
   {id:'listen', title:'Echo Tower', skill:'Hear & identify', description:'Listen closely and choose the sound you hear.', icon:'◖))', color:'mint'},
@@ -245,7 +245,22 @@ function spellingMask(entry) {
 }
 
 export function sortingBoard({book,group,level},rng=Math.random) {
-  const entries=practiceEntries(book,group);
+  let entries=practiceEntries(book,group);
+  const madeUpSpellings={
+    'long-a':[['taip','tape','ai']],
+    'long-e':[['grean','green','ea']],
+    'long-i':[['kight','kite','igh']],
+    'long-o':[['roap','rope','oa']],
+    'long-u':[['kew','cue','ew']],
+    oo:[['froot','fruit','oo-long']],
+  };
+  if(book===2&&madeUpSpellings[group]){
+    const extra=madeUpSpellings[group].map(([word,modelWord,pattern])=>({
+      ...bookWords[2].find(entry=>entry.word===modelWord),word,modelWord,pattern,
+      group:group==='oo'?'oo':pattern.endsWith('_e')?'magic':'teams',nonsense:true,
+    }));
+    entries=[...entries,...extra];
+  }
   const family=shuffle([...new Set(entries.map(entry=>entry.group))],rng)[0];
   const pool=book===2&&(group==='longMixed'||longVowelGroups[group])?entries:entries.filter(entry=>entry.group===family);
   const getKey=group==='all-oll'
@@ -263,6 +278,7 @@ export function sortingBoard({book,group,level},rng=Math.random) {
       if(entry)cards.push({entry,correct:categories[index]});
     }
   }
+  if(cards.length&&book===2&&madeUpSpellings[group]){const cycle=[...cards];for(let i=0;cards.length<10;i++)cards.push({...cycle[i%cycle.length]});}
   return {categories,cards:shuffle(cards,rng),prompt};
 }
 function question(mode,book,e,all,level,rng,group,index,total) {

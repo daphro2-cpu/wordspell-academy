@@ -3,7 +3,7 @@ import {bindFlashlightInput} from './flashlight-input.mjs?v=touch7';
 import {cueFor} from './sound-cues.mjs?v=pace6';
 import {createBookReader} from './book-reading.mjs?v=ground17';
 import {playVoiceSuccess} from './effects.mjs?v=arcade1';
-import {MoleCycle} from './burrow-state.mjs?v=soil24';
+import {MoleCycle} from './burrow-state.mjs?v=tap25';
 import {availableTopics,buildArcadeQuestion,labelSound,labelPattern,practicePool,flashlightGoal} from './arcade-bank.mjs?v=cvc21';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const shuffle=a=>[...a].sort(()=>Math.random()-.5);
@@ -260,21 +260,9 @@ export function mountArcade({getSettings,enter,exit,speak,stopSpeech}){
     if(revisit){current.retry.splice(current.retry.indexOf(revisit),1);current.question=revisit.question;resetQuestion(true);}
     else resetQuestion();
   }
-  host.addEventListener('click',event=>{
-    if(!current)return;
-    if(flashlightInput.ignoreClick(event)){event.preventDefault();return;}
-    const model=event.target.closest('[data-review-model]');
-    if(model&&current.phase==='done'){
-      const state=current,word=[...new Set(state.collected)][Number(model.dataset.reviewModel)];
-      if(clipWords.has(word)){
-        state.bookModelPlaying=true;bookReader.reset();
-        const finish=()=>{if(current!==state)return;state.bookModelPlaying=false;state.bookQuietUntil=performance.now()+700;bookReader.reset();};
-        roundVoice.pause();roundVoice.src='./audio/ana/'+encodeURIComponent(word)+'.mp3';roundVoice.onended=finish;roundVoice.onerror=finish;roundVoice.play().catch(finish);
-      }return;
-    }
-    const wordButton=event.target.closest('[data-arcade-word]');
-    if(wordButton&&current.phase==='playing'&&!current.paused&&!current.speaking){
-      if(current.game==='mole'&&wordButton.classList.contains('burrowed')&&!wordButton.matches(':focus-visible')&&!event.target.closest('.mole-rise'))return;
+  function hitWord(wordButton){
+    if(!current||current.phase!=='playing'||current.paused||current.speaking||wordButton.disabled)return;
+
       const entry=current.question.options[Number(wordButton.dataset.arcadeWord)];
       if(current.game==='flashlight'&&!current.revealed.has(entry.word)){reveal(wordButton);return;}
       if(current.question.correct.has(entry.word)){
@@ -300,6 +288,30 @@ export function mountArcade({getSettings,enter,exit,speak,stopSpeech}){
         fx(false);if(!current.retry.some(item=>item.question===current.question))current.retry.push({question:current.question,at:current.round+2});
         current.message='That word does not match. Keep looking! Use Help me compare if you need a clue.';host.querySelector('.arcade-feedback').textContent=current.message;
       }
+  }
+  host.addEventListener('pointerdown',event=>{
+    if(current?.game!=='mole'||event.button!==0)return;
+    const wordButton=event.target.closest('[data-arcade-word]');
+    const rise=event.target.closest('.mole-rise');
+    if(!wordButton||!rise||getComputedStyle(rise).visibility!=='visible')return;
+    event.preventDefault();
+    hitWord(wordButton);
+  });
+  host.addEventListener('click',event=>{
+    if(!current)return;
+    if(flashlightInput.ignoreClick(event)){event.preventDefault();return;}
+    const model=event.target.closest('[data-review-model]');
+    if(model&&current.phase==='done'){
+      const state=current,word=[...new Set(state.collected)][Number(model.dataset.reviewModel)];
+      if(clipWords.has(word)){
+        state.bookModelPlaying=true;bookReader.reset();
+        const finish=()=>{if(current!==state)return;state.bookModelPlaying=false;state.bookQuietUntil=performance.now()+700;bookReader.reset();};
+        roundVoice.pause();roundVoice.src='./audio/ana/'+encodeURIComponent(word)+'.mp3';roundVoice.onended=finish;roundVoice.onerror=finish;roundVoice.play().catch(finish);
+      }return;
+    }
+    const wordButton=event.target.closest('[data-arcade-word]');
+    if(wordButton){
+      if(current.game!=='mole'||event.detail===0)hitWord(wordButton);
       return;
     }
     const hear=event.target.closest('[data-arcade-hear]');

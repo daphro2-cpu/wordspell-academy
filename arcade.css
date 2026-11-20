@@ -63,7 +63,7 @@
 .mole .arcade-word .mole-sprite{bottom:0;width:215px;height:215px;animation:mole-look 5s var(--delay) steps(1) infinite}
 .mole .mole-rise .word-sign{bottom:4px;max-width:95%;box-sizing:border-box}
 .mole .burrowed .mole-rise{transform:translateY(260px)}
-.mole .burrowed:focus-visible .mole-rise{transform:translateY(0)}
+
 .mole-earth{bottom:0;z-index:2;pointer-events:none;height:24px;border-radius:0 0 45% 45%;background:linear-gradient(#8c6346,#533726);box-shadow:0 -3px 0 #c69c67}
 .mole .collected .mole-rise{transform:translateY(260px);transition-duration:.6s}
 .mole .collected .mole-sprite,.mole .collected .word-sign{animation:none}
@@ -97,7 +97,7 @@
 .mole-window{position:absolute;left:50%;translate:-50% 0;width:min(100%,260px);height:240px;bottom:35px;overflow:hidden;z-index:1;pointer-events:none}
 .mole-window .mole-rise{inset:auto auto 0 50%;width:min(100%,240px);height:240px;animation:none!important;transform:translateY(0);transition:transform .45s ease-in-out,visibility 0s}
 .mole .burrowed .mole-rise,.mole .collected .mole-rise{transform:translateY(110%)!important;visibility:hidden;transition:transform .45s ease-in-out,visibility 0s .45s}
-.mole .burrowed:focus-visible .mole-rise{transform:translateY(0)!important;visibility:visible;transition:transform .45s ease-out}
+
 .burrow-back,.burrow-front{position:absolute;display:block;left:50%;translate:-50% 0;bottom:0;width:min(100%,275px);height:92px;background:url('./assets/mole-burrow.webp') center bottom/100% 100% no-repeat;pointer-events:none}
 .burrow-back{z-index:0}.burrow-front{z-index:2;clip-path:inset(59% 0 0)}
 .mole .arcade-word:focus-visible{outline-offset:0}
@@ -207,8 +207,13 @@
 .mole .collected .mole-rise *{pointer-events:none}
 .mole .rumbling .burrow-front,.mole .rumbling .burrow-back,
 .mole.soil-transition .burrow-front,.mole.soil-transition .burrow-back{animation:soil-rumble .15s ease-in-out infinite alternate}
-@keyframes soil-rumble{from{translate:-2px 0;rotate:-.6deg}to{translate:2px -2px;rotate:.6deg}}
+@keyframes soil-rumble{from{transform:translateY(0)}to{transform:translateY(-1px)}}
 @media(prefers-reduced-motion:reduce){.mole .rumbling .burrow-front,.mole .rumbling .burrow-back,.mole.soil-transition .burrow-front,.mole.soil-transition .burrow-back{animation:none;filter:brightness(1.25)}}
 
 /* Keep the front row below the rear signs on the courtyard floor. */
 @media(min-width:701px){.mole .arcade-word:nth-of-type(n+4){bottom:0}}
+
+/* Keep horizontal anchors fixed during the soil cue; signs remain direct touch targets. */
+.mole .burrow-back,.mole .burrow-front{translate:-50% 0}
+.mole .arcade-word,.mole .word-sign,.mole .mole-sprite{touch-action:manipulation;-webkit-user-select:none;user-select:none}
+.mole .arcade-word:not(.collected) .word-sign{pointer-events:auto;cursor:pointer}
