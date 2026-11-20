@@ -1,6 +1,14 @@
-import {VoiceHold,voiceLevel} from './voice-hold.mjs?v=reading15';
-// Shared detected-voice duration rule; one pass returns one book.
-export class VoiceTurn extends VoiceHold{constructor(){super({rearmAfterPass:true});}}
+import {VoiceHold,VOICE_GOAL,voiceLevel} from './voice-hold.mjs?v=reading15';
+// A voice reaching the star returns one book immediately, then waits for quiet.
+export class VoiceTurn extends VoiceHold{
+ constructor(){super({rearmAfterPass:true});}
+ feed(level,ms){
+  if(!Number.isFinite(level)||!Number.isFinite(ms)||ms<=0)return false;
+  if(this.waitForQuiet)return super.feed(level,ms);
+  if(level<VOICE_GOAL)return false;
+  this.reset(true);return true;
+ }
+}
 export function createBookReader({onLevel,onRead,onStatus,onProgress=()=>{},canRead=()=>true}){
  let stream,context,analyser,frame,token=0,last=0,enabled=false;
  const turn=new VoiceTurn();
@@ -8,7 +16,7 @@ export function createBookReader({onLevel,onRead,onStatus,onProgress=()=>{},canR
  async function start(){
   stop();const request=token;onStatus('Allow the microphone, then read the highlighted book aloud.');
   try{
-   const media=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:false}});
+   const media=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});
    if(request!==token){media.getTracks().forEach(t=>t.stop());return;}
    stream=media;
    const track=stream.getAudioTracks()[0];

@@ -1,5 +1,5 @@
 import {VoiceHold,VOICE_GOAL,VOICE_HOLD_MS,voiceLevel} from './voice-hold.mjs?v=reading15';
-import {mountArcade,registerArcadeClips} from './arcade.mjs?v=reading15';
+import {mountArcade,registerArcadeClips} from './arcade.mjs?v=ground17';
 import {playSpinSound,playReelStop,stopSpinSound,playVoiceSuccess} from './effects.mjs?v=arcade1';
 import {catalog} from './bank.mjs?v=experience12';
 import {modes,levels,createRound,sortingBoard,practiceContrasts,shuffle,choiceLabel,isVowelTile} from './engine.mjs?v=experience12';

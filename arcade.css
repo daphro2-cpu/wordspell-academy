@@ -162,3 +162,14 @@
 
 /* Keep every book word intact; book-labels measures and reduces longer labels. */
 .review-book strong,.shelved-book strong,.flashlight .word-sign{white-space:nowrap;overflow-wrap:normal;word-break:normal;hyphens:none}
+
+/* Anchor each opening to the courtyard floor in the full illustration. */
+.arcade-field.mole{aspect-ratio:16/9;min-height:620px;background-position:center center}
+.mole .arcade-word,.mole .arcade-word:nth-of-type(even){position:absolute;top:auto!important;bottom:calc(30% - var(--row)*21%);left:calc(26% + var(--column)*16%);width:16%;height:clamp(165px,20vw,280px);margin:0}
+.mole .arcade-word:nth-of-type(n+4){left:calc(8% + var(--column)*29%);width:26%}
+@media(max-width:700px){
+ .arcade-field.mole{min-height:580px}
+ .mole .arcade-word,.mole .arcade-word:nth-of-type(even){width:30%;left:calc(5% + var(--column)*30%);height:190px;bottom:calc(35% - var(--row)*26%);margin:0}
+ .mole .arcade-word:nth-of-type(n+4){width:30%;left:calc(5% + var(--column)*30%)}
+ .mole-window{height:165px;bottom:22px}.mole-window .mole-rise{height:165px}.burrow-back,.burrow-front{height:58px}
+}
