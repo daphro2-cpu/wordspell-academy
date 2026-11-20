@@ -452,3 +452,13 @@ body::before{opacity:.22}
 .story-audio-clue{font-family:inherit;font-size:1rem!important;line-height:1.2;min-height:44px;padding:8px 10px!important;white-space:nowrap;background:#f6e5b6!important;color:#433052!important;border:2px solid #b58b48!important;border-radius:12px}
 .story-blank-slot.is-active .story-audio-clue{box-shadow:0 0 0 3px #d9ac51}
 .story-audio-clue:focus-visible{outline:3px solid #6d4489;outline-offset:3px}
+
+/* One-second warning: a slow emergency glow, with no extra audio. */
+.scene-sort.sort-urgent{outline:4px solid #ff775c;outline-offset:-4px;animation:sort-emergency-glow 1s ease-in-out infinite}
+.scene-sort.sort-urgent .sort-timer{background:#6b231e;border:3px solid #ffc46c;box-shadow:0 0 30px #ff5b40a0}
+.scene-sort.sort-urgent #sort-clock,.scene-sort.sort-urgent #sort-warning{color:#fff0bd;font-weight:800}
+#sort-warning{display:block;min-height:1.3em;font-size:1.2rem}
+@keyframes sort-emergency-glow{0%,100%{box-shadow:inset 0 0 22px #ff482530,0 0 10px #ff6b3c50}50%{box-shadow:inset 0 0 65px #ff482570,0 0 28px #ff6b3c90}}
+@media(prefers-reduced-motion:reduce){.scene-sort.sort-urgent{animation:none;box-shadow:inset 0 0 35px #ff482560}}
+
+.sort-spelling-word{display:inline-block;font-size:clamp(36px,5vw,64px);margin:0 20px;color:#fff0bd}

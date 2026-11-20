@@ -195,3 +195,20 @@
 .mole .arcade-word{pointer-events:none}
 .mole .mole-window .mole-rise{pointer-events:auto}
 .mole .arcade-word.collected .mole-rise{pointer-events:none}
+
+/* Movement is separate from the complete reading window. */
+.mole-window .mole-rise{transition:transform .45s cubic-bezier(.35,0,.25,1),visibility 0s!important}
+.mole .burrowed .mole-rise,.mole .collected .mole-rise{transition:transform .45s cubic-bezier(.35,0,.25,1),visibility 0s .45s!important}
+@media(prefers-reduced-motion:reduce){.mole-window .mole-rise,.mole .burrowed .mole-rise{transition:none!important}}
+
+/* Soil moves before a mole emerges; transparent image corners cannot intercept taps. */
+.mole .mole-window .mole-rise{pointer-events:none;clip-path:polygon(22% 0,78% 0,92% 44%,100% 54%,100% 83%,0 83%,0 54%,8% 44%)}
+.mole .mole-rise .word-sign,.mole .mole-rise .mole-sprite{pointer-events:auto}
+.mole .collected .mole-rise *{pointer-events:none}
+.mole .rumbling .burrow-front,.mole .rumbling .burrow-back,
+.mole.soil-transition .burrow-front,.mole.soil-transition .burrow-back{animation:soil-rumble .15s ease-in-out infinite alternate}
+@keyframes soil-rumble{from{translate:-2px 0;rotate:-.6deg}to{translate:2px -2px;rotate:.6deg}}
+@media(prefers-reduced-motion:reduce){.mole .rumbling .burrow-front,.mole .rumbling .burrow-back,.mole.soil-transition .burrow-front,.mole.soil-transition .burrow-back{animation:none;filter:brightness(1.25)}}
+
+/* Keep the front row below the rear signs on the courtyard floor. */
+@media(min-width:701px){.mole .arcade-word:nth-of-type(n+4){bottom:0}}

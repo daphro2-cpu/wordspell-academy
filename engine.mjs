@@ -1,5 +1,5 @@
 import {consonantEntries,endingEntries,digraphEntries} from './consonant-words.mjs?v=cvc21';
-import {bookWords, labels} from './bank.mjs?v=experience12';
+import {bookWords, labels} from './bank.mjs?v=soil24';
 
 export const modes = [
   {id:'listen', title:'Echo Tower', skill:'Hear & identify', description:'Listen closely and choose the sound you hear.', icon:'◖))', color:'mint'},
@@ -61,7 +61,14 @@ export function practiceContrasts(book) {
   return Object.fromEntries(Object.entries(contrasts[book]).map(([key,detail])=>[key,detail[1]]));
 }
 
+export const longVowelGroups={
+ 'long-a':['a_e','ai','ay'], 'long-e':['e_e','ee','ea','e'],
+ 'long-i':['i_e','ie','igh'], 'long-o':['o_e','oa','ow'],
+ 'long-u':['u_e','ue','ew','ui'],
+};
+
 export function matchFocus(book,group,entry) {
+  if(Number(book)===2&&longVowelGroups[group])return ['magic','teams'].includes(entry.group)&&longVowelGroups[group].includes(entry.pattern);
   if(group==='all') return true;
   if(book===2&&group==='longMixed')return ['magic','teams'].includes(entry.group);
   const contrast=contrasts[book][group];
@@ -240,12 +247,12 @@ function spellingMask(entry) {
 export function sortingBoard({book,group,level},rng=Math.random) {
   const entries=practiceEntries(book,group);
   const family=shuffle([...new Set(entries.map(entry=>entry.group))],rng)[0];
-  const pool=book===2&&group==='longMixed'?entries:entries.filter(entry=>entry.group===family);
+  const pool=book===2&&(group==='longMixed'||longVowelGroups[group])?entries:entries.filter(entry=>entry.group===family);
   const getKey=group==='all-oll'
     ? entry=>entry.pattern==='oll-long'?'like roll':'like ball or doll'
-    : entry=>soundKey(book,entry);
+    : book===2&&longVowelGroups[group]?entry=>choiceLabel(entry.pattern):entry=>soundKey(book,entry);
   const keys=shuffle([...new Set(pool.map(getKey))],rng);
-  const count=group==='n-ng'?3:levels[level].options;
+  const count=book===2&&longVowelGroups[group]?keys.length:group==='n-ng'?3:levels[level].options;
   const categories=keys.slice(0,count);
   const groups=categories.map(key=>shuffle(pool.filter(entry=>getKey(entry)===key),rng));
   const prompt=group==='all-oll'?'Listen to the middle sound.':groupPrompt(book,pool[0]);
@@ -260,7 +267,7 @@ export function sortingBoard({book,group,level},rng=Math.random) {
 }
 function question(mode,book,e,all,level,rng,group,index,total) {
   const base={mode, entry:e, explanation:ruleExplanation(book,e)};
-  const family=comparable(book,e,all);
+  const family=comparable(book,e,book===2&&longVowelGroups[group]?bookWords[book]:all);
   const nasal=['n','ng','m'];
   const own=e.group==='endings'&&['listen','flight'].includes(mode)
     ? family.filter(entry=>nasal.includes(entry.pattern)===nasal.includes(e.pattern))

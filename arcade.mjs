@@ -3,7 +3,7 @@ import {bindFlashlightInput} from './flashlight-input.mjs?v=touch7';
 import {cueFor} from './sound-cues.mjs?v=pace6';
 import {createBookReader} from './book-reading.mjs?v=ground17';
 import {playVoiceSuccess} from './effects.mjs?v=arcade1';
-import {moleIsUp} from './burrow-state.mjs?v=burrows1';
+import {MoleCycle} from './burrow-state.mjs?v=soil24';
 import {availableTopics,buildArcadeQuestion,labelSound,labelPattern,practicePool,flashlightGoal} from './arcade-bank.mjs?v=cvc21';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const shuffle=a=>[...a].sort(()=>Math.random()-.5);
@@ -116,7 +116,7 @@ export function mountArcade({getSettings,enter,exit,speak,stopSpeech}){
       const columns=current.game==='flashlight'?Math.ceil(q.options.length/2):q.options.length;
       content='<div class="arcade-instructions"><strong class="mode-badge">'+(current.kind==='sound'?'SOUND · Compare what you hear':'SPELLING · Compare the written letters')+'</strong><h2>'+esc(prompt)+'</h2><p>'+esc(clue)+'</p>'+(current.game==='mole'?'<p class="pop-instruction">Watch the holes. Whack every matching word. Missed moles come back!</p>':'')+'</div><div class="arcade-toolbar"><button type="button" class="quiet" data-arcade-action="pause">'+(current.paused?'Resume':'Pause')+'</button><button type="button" class="quiet" data-arcade-action="music">♫ Music '+(current.music?'on':'off')+'</button><button type="button" class="quiet" data-arcade-action="help">Help me compare</button><span data-arcade-progress>'+ (current.game==='flashlight'?current.score+' of '+current.wordGoal+' words found':'Round '+Math.min(current.round+1,current.total)+' of '+current.total)+(current.game==='mole'&&current.kind==='sound'&&current.task==='all'?' · Set '+(current.wave+1)+' of 3':'')+'</span>'+(current.timed?'<span class="arcade-clock" role="timer">Time <b>'+Math.ceil(current.remaining/1000)+'</b> s</span>':'')+'</div><div class="arcade-field '+current.game+' '+(current.paused?'paused':'')+' '+(canNext?'cleared':'')+' '+(current.phase==='expired'?'expired':'')+'" style="--beam-x:50%;--beam-y:50%;--columns:'+columns+'" aria-label="'+(current.game==='mole'?'Mole garden':'Explore the library with your flashlight')+'">'+
         '<div class="library-door" aria-hidden="true">'+(canNext?'✦':'')+'</div>'+
-        q.options.map((entry,index)=>'<button type="button" class="arcade-word '+(current.found.has(entry.word)?'collected':'')+' '+(current.revealed.has(entry.word)?'discovered':'')+'" style="--column:'+(current.game==='mole'?index%3:index%columns)+';--row:'+Math.floor(index/(current.game==='mole'?3:columns))+';--delay:'+index*.17+'s" data-arcade-word="'+index+'" '+(current.paused||current.phase!=='playing'||current.found.has(entry.word)?'disabled':'')+' aria-label="'+esc(entry.word)+'">'+(current.game==='mole'?'<span class="burrow-back" aria-hidden="true"></span><span class="mole-window"><span class="mole-rise"><span class="mole-sprite" aria-hidden="true"></span>':'<span class="book-spine" aria-hidden="true"></span>')+'<span class="word-sign" style="--letters:'+entry.word.length+'">'+esc(entry.word)+'</span>'+(current.game==='mole'?'</span></span><span class="burrow-front" aria-hidden="true"></span>':'')+'</button>').join('')+
+        q.options.map((entry,index)=>'<button type="button" class="arcade-word '+(current.game==='mole'?'burrowed ':'')+(current.found.has(entry.word)?'collected':'')+' '+(current.revealed.has(entry.word)?'discovered':'')+'" style="--column:'+(current.game==='mole'?index%3:index%columns)+';--row:'+Math.floor(index/(current.game==='mole'?3:columns))+';--delay:'+index*.17+'s" data-arcade-word="'+index+'" '+(current.paused||current.phase!=='playing'||current.found.has(entry.word)?'disabled':'')+' aria-label="'+esc(entry.word)+'">'+(current.game==='mole'?'<span class="burrow-back" aria-hidden="true"></span><span class="mole-window"><span class="mole-rise"><span class="mole-sprite" aria-hidden="true"></span>':'<span class="book-spine" aria-hidden="true"></span>')+'<span class="word-sign" style="--letters:'+entry.word.length+'">'+esc(entry.word)+'</span>'+(current.game==='mole'?'</span></span><span class="burrow-front" aria-hidden="true"></span>':'')+'</button>').join('')+
         (current.game==='flashlight'?'<div class="library-shade" aria-hidden="true"></div><div class="fox-walker" aria-hidden="true"><span class="fox-sprite"></span><span class="torch-beam"></span></div>':'')+
         (current.paused?'<div class="arcade-overlay"><strong>Take your time</strong><button class="primary" type="button" data-arcade-action="pause">Resume</button></div>':'')+
         (current.phase==='expired'?'<div class="arcade-overlay"><strong>The magic is fading!</strong><p>Take another look. Your words are waiting.</p><button class="primary" type="button" data-arcade-action="retry">Light it up again</button></div>':'')+
@@ -134,12 +134,13 @@ export function mountArcade({getSettings,enter,exit,speak,stopSpeech}){
     updateMoles();setMusic();
   }
   function updateMoles(){
-    if(current?.game!=='mole')return;
+    if(current?.game!=='mole'||!current.question||!current.moleCycle)return;
+    const removed=new Set(current.question.options.flatMap((entry,index)=>current.found.has(entry.word)?[index]:[]));
+    const visible=current.phase==='playing'&&!current.speaking
+      ?current.moleCycle.advance(current.moleElapsed??0,removed):new Set();
     host.querySelectorAll('[data-arcade-word]').forEach((button,index)=>{
-      const t=current.moleElapsed??0;
-      const rank=current.moleOrder?.indexOf(index)??index;
-      const down=!moleIsUp(t,rank,current.question.options.length,current.level);
-      button.classList.toggle('burrowed',current.phase==='cleared'||down);
+      button.classList.toggle('burrowed',!visible.has(index));
+      button.classList.toggle('rumbling',!current.speaking&&current.phase==='playing'&&current.moleCycle.slots.some(slot=>slot.index===index&&(current.moleElapsed??0)<slot.since));
     });
   }
   function resetQuestion(reuse=false){
@@ -150,6 +151,7 @@ export function mountArcade({getSettings,enter,exit,speak,stopSpeech}){
       current.question.options=current.question.options.map(e=>({...e,clip:clipWords.has(e.word)}));
     }
     current.moleOrder=shuffle(current.question.options.map((_,index)=>index));
+    current.moleCycle=new MoleCycle(current.moleOrder,current.level);
     current.lastTick=performance.now();
     render();announceQuestion();
   }
@@ -160,9 +162,9 @@ export function mountArcade({getSettings,enter,exit,speak,stopSpeech}){
     state.lastSpokenCue=signature;
     const urls=cue.files.map(f=>'./audio/arcade-cues/'+f+'.mp3');
     if(cue.example&&clipWords.has(cue.example))urls.push('./audio/ana/'+encodeURIComponent(cue.example)+'.mp3');
-    state.speaking=true;setMusic();
+    state.speaking=true;updateMoles();setMusic();
     const feedback=host.querySelector('.arcade-feedback');if(feedback)feedback.textContent='Listen to the question…';
-    function finish(){if(current!==state||request!==announcement)return;state.speaking=false;state.lastTick=performance.now();if(current.phase==='playing'){const f=host.querySelector('.arcade-feedback');if(f)f.textContent=state.game==='mole'?'Watch the holes. Whack every match!':'Move the light. Find every match!';}setMusic();}
+    function finish(){if(current!==state||request!==announcement)return;state.speaking=false;state.lastTick=performance.now();updateMoles();if(current.phase==='playing'){const f=host.querySelector('.arcade-feedback');if(f)f.textContent=state.game==='mole'?'Watch the holes. Whack every match!':'Move the light. Find every match!';}setMusic();}
     function next(){if(current!==state||request!==announcement)return;if(!urls.length){finish();return;}roundVoice.src=urls.shift();roundVoice.onended=next;roundVoice.onerror=finish;if(!state.paused)roundVoice.play().catch(finish);}
     next();
   }
@@ -174,7 +176,7 @@ export function mountArcade({getSettings,enter,exit,speak,stopSpeech}){
       if(!current)return;
       const now=performance.now(),delta=now-current.lastTick;current.lastTick=now;
       if(current.paused||current.speaking||document.hidden||document.getElementById('guide')?.open)return;
-      if(current.phase==='cleared'){current.clearedFor=(current.clearedFor??0)+delta;if(current.clearedFor>=(current.question.rule?5500:1800))nextQuestion();return;}
+      if(current.phase==='cleared'){current.clearedFor=(current.clearedFor??0)+delta;if(current.clearedFor>=(current.question.rule?5500:current.game==='mole'?900:1800))nextQuestion();return;}
       if(current.phase!=='playing')return;
       current.moleElapsed+=delta;updateMoles();
       if(!current.timed)return;
@@ -280,12 +282,16 @@ export function mountArcade({getSettings,enter,exit,speak,stopSpeech}){
         current.found.add(entry.word);current.score++;current.collected.push(entry.fix??entry.word);fx(true);
         const badge=host.querySelector('.arcade-stage header>span');if(badge)badge.textContent=current.score+' '+(current.game==='mole'?'moles helped':'books found');
         wordButton.classList.add('collected');wordButton.disabled=true;
+        if(current.game==='mole')updateMoles();
         if(current.game==='flashlight'){const progress=host.querySelector('[data-arcade-progress]');if(progress)progress.textContent=current.score+' of '+current.wordGoal+' words found';}
         current.message=entry.fix?'You caught it! '+entry.word+' → '+entry.fix+'. '+entry.reason:current.game==='mole'?'You caught a match! '+entry.word+'.':'Back on the shelf! '+entry.word;
         if(current.found.size===current.question.correct.size){
           current.phase='cleared';current.clearedFor=0;if(!entry.fix)current.message+=' The magic is growing!';
           const state=current;
-          setTimeout(()=>{if(current===state&&state.phase==='cleared'){render();}},1050);
+          if(current.game==='mole'){
+            host.querySelector('.arcade-field')?.classList.add('soil-transition');
+            host.querySelector('.arcade-feedback').textContent=current.message;
+          }else setTimeout(()=>{if(current===state&&state.phase==='cleared'){render();}},1050);
         }else{
           host.querySelector('.arcade-feedback').textContent=current.message;
           const shelf=host.querySelector('.arcade-shelf');const tile=document.createElement('span');tile.textContent=entry.word;shelf.append(tile);
